@@ -34,8 +34,19 @@ class UserSchema(Schema):
     zipcode: Optional[int] = None
 
 
+class UpdateUserSchema(Schema):
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    street: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    zipcode: Optional[int] = None
+
+
 class VendorSchema(Schema):
-    user: UserSchema
     store_name: str
     store_desc: str
     store_street: str
