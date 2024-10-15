@@ -13,14 +13,18 @@ from .schema import (
     TokenSchema,
     UserSchema,
     VendorSchema,
+    UpdateUserSchema
 )
 
+user_router = Router()
+vendor_router = Router()
 auth_router = Router()
 jwt_auth = JWTAuth()
 
 
 @auth_router.post("/register/",
                   response={201: UserSchema, 400: NotFoundSchema})
+# pyright: reportUnusedParameter=false
 def register(request, data: RegisterUserSchema):
     """
     Registers a new user
@@ -57,7 +61,7 @@ def register(request, data: RegisterUserSchema):
         return 400, {"message": str(e)}
 
 
-@auth_router.post("/vendoregister/",
+@auth_router.post("/vendoregister/", auth=jwt_auth,
                   response={201: VendorSchema, 400: NotFoundSchema})
 def register_vendor(request, data: VendorSchema):
     """
@@ -110,3 +114,46 @@ def login(request, data: LoginSchema):
             }
         except Exception as e:
             return 400, {"message": f"An error occurred {str(e)}"}
+
+
+@user_router.get("/me", auth=jwt_auth, response={200: UserSchema})
+def profile(request):
+    return request.auth
+
+
+@user_router.put("/me", auth=jwt_auth, response={200: UserSchema})
+def update_profile(request, data: UpdateUserSchema):
+    user = request.auth
+
+    if not user:
+        return 400, {"message": "Authentication required"}
+
+    try:
+        for key, value in data.dict(exclude_unset=True).items():
+            setattr(user, key, value)
+        user.save()
+        return 200, user
+
+    except Exception as e:
+        return 400, {"message": str(e)}
+
+
+@user_router.delete("/me", auth=jwt_auth, response={204: None})
+def delete_user(request):
+    user = request.auth
+    if not user:
+        return 400, {"message": "Authentication required"}
+    user.delete()
+    return 204, None
+
+
+@vendor_router.get("/{storename}/", response={
+    200: VendorSchema,
+    404: NotFoundSchema
+})
+def get_vendor(request, storename: str):
+    try:
+        vendor = Vendor.objects.get(store_name__iexact=storename)
+        return 200, vendor
+    except Vendor.DoesNotExist:
+        return 404, {"message": "Vendor not found"}
