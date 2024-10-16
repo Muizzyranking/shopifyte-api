@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import User, Vendor
+from .models import User, Store
 
 # Register your models here.
-models = [User, Vendor]
+models = [User, Store]
 for model in models:
     admin.site.register(model)

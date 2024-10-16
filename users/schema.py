@@ -32,6 +32,8 @@ class UserSchema(Schema):
     city: Optional[str] = None
     country: Optional[str] = None
     zipcode: Optional[int] = None
+    message: Optional[str] = None
+    email_verified: Optional[bool] = False
 
 
 class UpdateUserSchema(Schema):
@@ -46,13 +48,22 @@ class UpdateUserSchema(Schema):
     zipcode: Optional[int] = None
 
 
-class VendorSchema(Schema):
+class StoreSchema(Schema):
     store_name: str
     store_desc: str
     store_street: str
     store_city: str
     store_country: str
     store_zipcode: int
+
+
+class UpdateStoreSchema(Schema):
+    store_name: Optional[str] = None
+    store_desc: Optional[str] = None
+    store_street: Optional[str] = None
+    store_city: Optional[str] = None
+    store_country: Optional[str] = None
+    store_zipcode: Optional[int] = None
 
 
 class LoginSchema(Schema):
