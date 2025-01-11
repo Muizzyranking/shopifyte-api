@@ -1,4 +1,6 @@
+from typing import List
 from django.contrib.auth import authenticate
+from django.http import HttpRequest
 from ninja import Router
 from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.tokens import RefreshToken
@@ -10,19 +12,16 @@ from users.schema import (
     RegisterResponseSchema,
     RegisterSchema,
     TokenSchema,
+    UserSchema,
 )
 
-router = Router()
+auth_router = Router()
+user_router = Router()
 jwt_auth = JWTAuth()
 
 
-@router.get("/")
-def home(request):
-    return {"message": "Hello World"}
-
-
-@router.post(
-    "/auth/register",
+@auth_router.post(
+    "/register",
     response={201: RegisterResponseSchema, 400: ErrorSchema},
 )
 def register(request, data: RegisterSchema):
@@ -85,8 +84,8 @@ def register(request, data: RegisterSchema):
         return 400, {"message": str(e)}
 
 
-@router.get(
-    "/auth/login", auth=jwt_auth, response={200: TokenSchema, 400: ErrorSchema}
+@auth_router.post(
+    "/login", auth=jwt_auth, response={200: TokenSchema, 400: ErrorSchema}
 )
 def login(request, data: LoginSchema):
     """
@@ -124,3 +123,15 @@ def login(request, data: LoginSchema):
 
     except Exception as e:
         return 400, {"message": str(e)}
+
+
+# api/users
+@user_router.get("/", response=List[UserSchema])
+def all_users(request: HttpRequest):
+    return User.objects.all()
+
+
+# api/users/me
+@user_router.get("/me", response=UserSchema)
+def user(request: HttpRequest):
+    return request.user
