@@ -1,0 +1,11 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "typeCheckingMode": "standard",
+  "reportAttributeAccessIssue": "none",
+  "reportUnusedParameter": "none",
+  "reportCallIssue": "none",
+  "reportIncompatibleMethodOverride": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportAssignmentType": "none"
+}
