@@ -1,7 +1,8 @@
+from typing import Optional
 from ninja import Schema
 from pydantic import EmailStr, Field, field_validator, model_validator
 
-from core.models import CustomUser
+from .models import CustomUser
 
 
 class RegisterInput(Schema):
@@ -10,7 +11,9 @@ class RegisterInput(Schema):
     """
 
     email: EmailStr = Field(..., examples=["user@email.com"], description="User's email address")
-    username: str = Field(..., examples=["john_doe"], description="Unique username for the user")
+    username: Optional[str] = Field(
+        ..., examples=["john_doe"], description="Unique username for the user"
+    )
     first_name: str = Field(..., examples=["John"], description="Unique username for the user")
     last_name: str = Field(..., examples=["Doe"], description="Unique username for the user")
     phone_number: str = Field(..., examples=["Doe"], description="Unique username for the user")
