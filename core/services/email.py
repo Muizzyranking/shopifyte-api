@@ -7,6 +7,9 @@ from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 
+from apps.users.models import CustomUser
+from core.exceptions.email import EmailSendError
+
 
 class EmailType(Enum):
     CONFIRMATION = "confirmation"
@@ -71,6 +74,7 @@ class EmailService:
 
     @staticmethod
     def render_template(template_path: str, context: dict[str, Any]):
+        """Render a template with the given context."""
         try:
             return render_to_string(template_path, context)
         except TemplateDoesNotExist:
@@ -83,8 +87,8 @@ class EmailService:
         email_type: EmailType,
         to_emails: list[str],
         context: dict[str, Any],
-        fail_silently: bool = False,
     ):
+        """"""
         try:
             EmailConfig.validate_context(email_type, context)
             templates = EmailConfig.get_templates(email_type)
@@ -100,19 +104,26 @@ class EmailService:
             try:
                 html_body = self.render_template(templates["html_template"], context)
                 email.attach_alternative(html_body, "text/html")
-            except TemplateDoesNotExist:
-                pass
+            except ValueError as ve:
+                raise ve
             except Exception as e:
-                if not fail_silently:
-                    raise ValueError(f"Error rendering HTML template: {str(e)}")
+                raise ValueError(f"Error rendering HTML template: {str(e)}")
 
-            email.send(fail_silently=fail_silently)
+            send_count = email.send(fail_silently=False)
+            if send_count == 0:
+                raise EmailSendError(f"Failed to send {email_type.value} to {to_emails}.")
+
             return True
-        except Exception:
-            pass
+        except EmailSendError as e:
+            raise e
+        except Exception as e:
+            raise EmailSendError(f"Error sending email: {str(e)}")
 
-    def send_confirmation_email(self, user):
-        context = {"name": user.get_full_name(), "confirmation_url": ""}
+    def send_confirmation_email(self, user: CustomUser, confirmation_url: str):
+        context = {
+            "name": user.get_full_name(),
+            # "confirmation_url": confirmation_url,
+        }
         return self.send_email(
             email_type=EmailType.CONFIRMATION,
             to_emails=[user.email],
