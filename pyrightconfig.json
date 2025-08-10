@@ -7,5 +7,7 @@
   "reportCallIssue": "none",
   "reportIncompatibleMethodOverride": "none",
   "reportGeneralTypeIssues": "none",
-  "reportAssignmentType": "none"
+  "reportAssignmentType": "none",
+  "reportIncompatibleVariableOverride": "none",
+  "reportArgumentType": "none"
 }

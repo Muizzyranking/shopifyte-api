@@ -15,3 +15,5 @@ venv
 
 # db
 db.sqlite3
+
+sent_emails
