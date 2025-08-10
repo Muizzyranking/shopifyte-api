@@ -2,6 +2,8 @@ from typing import Optional
 from ninja import Schema
 from pydantic import EmailStr, Field, field_validator, model_validator
 
+from core.schema import DataResponseSchema
+
 from .models import CustomUser
 
 
@@ -39,3 +41,21 @@ class RegisterInput(Schema):
         if self.password != self.confirm_password:
             raise ValueError("Passwords do not match.")
         return self
+
+
+class LoginInput(Schema):
+    email: EmailStr = Field(..., examples=["user@gmail.com"], description="User's email address")
+    password: str = Field(..., examples=["strongpassword123"], description="User's password")
+
+
+class LoginResponse(Schema):
+    """
+    Schema for login response
+    """
+
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+
+
+class LoginDataReponse(DataResponseSchema[LoginResponse]):
+    message: str = "Login successful"

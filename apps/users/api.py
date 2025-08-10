@@ -1,11 +1,16 @@
 from core.exceptions.email import EmailSendError
 from core.exceptions.verification import EmailMisMatch, UserNotFound
 from core.router import CustomRouter
-from core.schema import ErrorResponseSchema, SuccessResponseSchema
+from core.schema import (
+    BadRequestResponseSchema,
+    ErrorResponseSchema,
+    NotFoundResponseSchema,
+    SuccessResponseSchema,
+)
 from core.utils import error_message, response_message, response_with_data
 
 from .models import CustomUser
-from .schema import LoginInput, RegisterInput
+from .schema import LoginDataReponse, LoginInput, RegisterInput
 from .services import (
     authenticate_user,
     create_user,
@@ -23,7 +28,7 @@ auth_router = CustomRouter(tags=["Auth"])
     response={
         200: SuccessResponseSchema,
         202: SuccessResponseSchema,
-        400: ErrorResponseSchema,
+        400: BadRequestResponseSchema,
     },
 )
 def register_user(request, user_data: RegisterInput):
@@ -47,8 +52,8 @@ def register_user(request, user_data: RegisterInput):
     summary="Verify user email",
     response={
         200: SuccessResponseSchema,
-        404: ErrorResponseSchema,
-        400: ErrorResponseSchema,
+        400: BadRequestResponseSchema,
+        404: NotFoundResponseSchema,
     },
 )
 def verify_email(request, token: str):
@@ -63,7 +68,7 @@ def verify_email(request, token: str):
         return 500, error_message(e)
 
 
-@auth_router.post("login", response={200: dict, 400: dict})
+@auth_router.post("login", response={200: LoginDataReponse, 400: BadRequestResponseSchema})
 def login(request, data: LoginInput):
     try:
         user: CustomUser = authenticate_user(data.email, data.password)
