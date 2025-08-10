@@ -122,7 +122,7 @@ class EmailService:
     def send_confirmation_email(self, user: CustomUser, confirmation_url: str):
         context = {
             "name": user.get_full_name(),
-            # "confirmation_url": confirmation_url,
+            "confirmation_url": confirmation_url,
         }
         return self.send_email(
             email_type=EmailType.CONFIRMATION,
