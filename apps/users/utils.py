@@ -1,0 +1,20 @@
+import random
+import string
+from django.http import HttpRequest
+
+from apps.users.models import CustomUser
+from core.services.verification import TokenType, VerificationService
+from core.services.email import EmailService
+
+
+def generate_code(length: int = 6) -> str:
+    characters = string.digits
+    return "".join(random.choices(characters, k=length))
+
+
+def send_confirmation_email(request: HttpRequest, user: CustomUser):
+    verification_service = VerificationService()
+    token = verification_service.generate_token(user, TokenType.CONFIRMATION)
+    confirmation_url = verification_service.create_verification_url(request, token, "verify_email")
+    email_service = EmailService()
+    return email_service.send_confirmation_email(user, confirmation_url)
