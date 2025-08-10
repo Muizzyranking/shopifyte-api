@@ -17,7 +17,7 @@ class ErrorResponseSchema(BaseSchema):
 
 
 class DataResponseSchema(BaseSchema, Generic[T]):
-    data: List[T]
+    data: T
 
 
 class ValidationErrorResponseSchema(BaseSchema):
