@@ -25,7 +25,10 @@ class CustomUser(AbstractUser):
         verbose_name_plural = "users"
 
     def __str__(self):
-        return self.username
+        return f"{self.email} - ({self.username})"
+
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class UserAddress(BaseModel):
