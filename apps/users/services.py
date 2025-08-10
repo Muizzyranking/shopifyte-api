@@ -1,3 +1,6 @@
+from django.contrib.auth import authenticate
+from ninja_jwt.tokens import RefreshToken
+from core.exceptions.auth import Unauthorized
 from core.services.verification import TokenType, VerificationService
 from .models import CustomUser
 
@@ -30,3 +33,41 @@ def verify_email_token(token: str) -> str:
     user.email_verified = True
     user.save()
     return "Email verification successful. You can now log in."
+
+
+def authenticate_user(email: str, password: str) -> CustomUser:
+    """
+    Authenticate user with email and password.
+
+    Args:
+        email (str): User's email.
+        password (str): User's password.
+
+    Returns:
+        Authenticated user object.
+
+    Raises:
+        Unauthorized: If authentication fails.
+    """
+    user = authenticate(email=email, password=password)
+    if user is None:
+        raise Unauthorized("Invalid email or password.")
+    return user
+
+
+def make_token_for_user(user: CustomUser):
+    """
+    Create a verification token for the user.
+
+    Args:
+        user (CustomUser): The user for whom the token is created.
+        token_type (TokenType): The type of token to create.
+
+    Returns:
+        str: The generated token.
+    """
+    token = RefreshToken.for_user(user)
+    return {
+        "access": str(token.access_token),
+        "refresh": str(token),
+    }
