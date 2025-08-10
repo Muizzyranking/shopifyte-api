@@ -1,0 +1,5 @@
+Hi {{ name }},
+
+Please confirm your email address by clicking the following link:
+{{ confirmation_url }}
+
