@@ -1,5 +1,4 @@
 import logging
-import traceback
 from typing import Callable, Dict, List, Optional, Type, Union
 
 from django.conf import settings
@@ -23,7 +22,6 @@ class APIExceptionHandler:
         self.api = api
         self.debug = debug if debug is not None else settings.DEBUG
         self._exception_registry = {}
-        self._setup_default_handlers()
 
     def _create_error_response(
         self,
@@ -41,8 +39,10 @@ class APIExceptionHandler:
         return self.api.create_response(request, response_data, status=status)
 
     @staticmethod
-    def _get_field_name(location: tuple) -> str:
+    def _get_field_name(location: Union[tuple, list, str]) -> str:
         """Extract clean field name from pydantic location"""
+        if isinstance(location, str):
+            location = (location,)
         if not location:
             return "general"
 
@@ -277,6 +277,7 @@ class APIExceptionHandler:
 
     def apply_handlers(self) -> NinjaExtraAPI:
         """Apply all registered handlers to the API"""
+        self._setup_default_handlers()
         return self.api
 
 
