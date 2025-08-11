@@ -1,3 +1,4 @@
+from tokenize import TokenError
 from django.contrib.auth import authenticate
 from ninja_jwt.tokens import RefreshToken
 from core.exceptions.auth import Unauthorized
@@ -68,6 +69,20 @@ def make_token_for_user(user: CustomUser):
     """
     token = RefreshToken.for_user(user)
     return {
-        "access": str(token.access_token),
-        "refresh": str(token),
+        "access_token": str(token.access_token),
+        "refresh_token": str(token),
     }
+
+
+def refresh_tokens_from_refresh_token(refresh_token_str: str) -> dict:
+    """
+    Validate refresh token string and return a new access token.
+    """
+    try:
+        refresh = RefreshToken(refresh_token_str)
+    except TokenError:
+        raise Unauthorized("Invalid or expired refresh token")
+
+    access = str(refresh.access_token)
+
+    return {"access": access, "refresh": None}
