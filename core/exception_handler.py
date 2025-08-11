@@ -1,9 +1,10 @@
 import logging
-from django.http import Http404
-from django.core.exceptions import PermissionDenied
-from typing import Dict, List, Union, Type, Callable
+import traceback
+from typing import Callable, Dict, List, Optional, Type, Union
+
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpRequest, HttpResponse
 from ninja.errors import ValidationError
 from ninja_extra import NinjaExtraAPI
 from pydantic import ValidationError as PydanticValidationError
@@ -29,7 +30,7 @@ class APIExceptionHandler:
         request: HttpRequest,
         message: str,
         status: int = 400,
-        errors: Dict[str, List[str]] = None,
+        errors: Optional[Dict[str, List[str]]] = None,
     ) -> HttpResponse:
         """Creates error response message"""
         response_data = {"message": message}
@@ -57,16 +58,6 @@ class APIExceptionHandler:
         msg = error.get("msg", "")
         ctx = error.get("ctx", {})
 
-        # Predefined user-friendly messages
-        error_type_messages = {
-            "missing": "This field is required",
-            "value_error": "Invalid value provided",
-            "type_error": "Invalid data type",
-        }
-
-        if error_type in error_type_messages:
-            return error_type_messages[error_type]
-
         if error_type == "value_error" and ctx and "error" in ctx:
             return str(ctx["error"])
 
@@ -74,17 +65,23 @@ class APIExceptionHandler:
         return clean_msg.capitalize() if clean_msg else "Invalid value"
 
     @staticmethod
-    def _get_exception_message(exc: Exception, fallback_message: str = None) -> str:
+    def _get_exception_message(
+        exc: Exception, fallback_message: Optional[str] = None, force: bool = False
+    ) -> str:
         """
         Extract message from exception, with fallback support
 
         Args:
             exc: The exception instance
             fallback_message: Fallback message if exception has no meaningful message
+            force: uses fallback message even if exception has a message
 
         Returns:
             The exception message or fallback message
         """
+        if force and fallback_message:
+            return fallback_message
+
         exc_message = str(exc).strip()
 
         if exc_message and exc_message != type(exc).__name__:
@@ -115,14 +112,41 @@ class APIExceptionHandler:
         elif status >= 400:
             logger.warning(f"Client error: {log_data}")
 
-    def _handle_validation_error(
+    def _is_output_validation_error(
+        self, exc: Union[ValidationError, PydanticValidationError]
+    ) -> bool:
+        """
+        Determine if this is an output validation error by examining the stack trace.
+        This looks for Django Ninja's response processing in the call stack.
+        """
+        if "NinjaResponse" in str(exc):
+            return True
+
+        return False
+
+    def _handle_output_validation_error(
+        self, request: HttpRequest, exc: Union[ValidationError, PydanticValidationError]
+    ) -> HttpResponse:
+        self._log_exception(request, exc, 500)
+        message = "An internal error occurred while processing."
+        if self.debug:
+            message = f"Response validation error: {self._get_exception_message(exc)}"
+
+        return self._create_error_response(request=request, message=message, status=500)
+
+    def _handle_input_validation_error(
         self, request: HttpRequest, exc: Union[ValidationError, PydanticValidationError]
     ) -> HttpResponse:
         """Handle validation errors with improved error aggregation"""
         errors = {}
 
-        if hasattr(exc, "errors") and exc.errors:
-            for error in exc.errors:
+        try:
+            error_list = exc.errors() if callable(exc.errors) else exc.errors
+        except Exception:
+            error_list = []
+
+        if error_list:
+            for error in error_list:
                 if isinstance(error, dict) and "loc" in error:
                     field = self._get_field_name(error.get("loc", []))
                     message = self._get_clean_message(error)
@@ -137,7 +161,7 @@ class APIExceptionHandler:
                     if error not in errors["general"]:
                         errors["general"].append(error)
 
-        main_message = self._get_exception_message(exc, "Invalid data provided")
+        main_message = self._get_exception_message(exc, "Invalid data provided", True)
         self._log_exception(request, exc, 422)
         return self._create_error_response(
             request=request,
@@ -146,11 +170,17 @@ class APIExceptionHandler:
             status=422,
         )
 
+    def _handle_validation_error(
+        self, request: HttpRequest, exc: Union[ValidationError, PydanticValidationError]
+    ) -> HttpResponse:
+        if self._is_output_validation_error(exc):
+            return self._handle_output_validation_error(request, exc)
+        return self._handle_input_validation_error(request, exc)
+
     def _handle_global_exception(self, request: HttpRequest, exc: Exception) -> HttpResponse:
         """Handle all other exceptions with security considerations"""
         self._log_exception(request, exc, 500)
 
-        # Don't expose internal error details in production
         if self.debug:
             message = self._get_exception_message(exc, f"Internal server error: {str(exc)}")
         else:
