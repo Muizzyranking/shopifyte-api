@@ -59,3 +59,11 @@ class LoginResponse(Schema):
 
 class LoginDataReponse(DataResponseSchema[LoginResponse]):
     message: str = "Login successful"
+
+
+class RefreshTokenSchema(Schema):
+    """
+    Schema for refresh token input
+    """
+
+    refresh_token: str = Field(..., description="JWT refresh token")
