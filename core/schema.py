@@ -1,4 +1,4 @@
-from ninja import Schema
+from ninja import Schema, Field
 from typing import Dict, Generic, List, TypeVar
 
 T = TypeVar("T")
@@ -21,8 +21,10 @@ class DataResponseSchema(BaseSchema, Generic[T]):
 
 
 class ValidationErrorResponseSchema(BaseSchema):
-    message: str = "Invalid data"
-    errors: Dict[str, List[str]]
+    message: str = Field(..., example="Invalid data")
+    errors: Dict[str, List[str]] = Field(
+        ..., example={"email": ["invalid email"], "username": ["must be at least 3 characters"]}
+    )
 
 
 class UnauthorizedResponseSchema(BaseSchema):

@@ -1,6 +1,6 @@
 from typing import Optional
-from ninja import Schema
-from pydantic import EmailStr, Field, field_validator, model_validator
+from ninja import Schema, Field
+from pydantic import EmailStr, field_validator, model_validator
 
 from core.schema import DataResponseSchema
 
