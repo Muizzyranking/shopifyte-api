@@ -11,6 +11,7 @@ from ninja_jwt.exceptions import InvalidToken
 from pydantic import ValidationError as PydanticValidationError
 
 from core.exceptions.auth import Unauthorized
+from core.exceptions.verification import UserNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +205,15 @@ class APIExceptionHandler:
                 fallback_message="Authentication required",
                 status=401,
                 log_level="warning",
+            ),
+        )
+
+        self.register_handler(
+            UserNotFound,
+            self.create_custom_handler(
+                fallback_message="User not found",
+                status=404,
+                force=True,
             ),
         )
 
