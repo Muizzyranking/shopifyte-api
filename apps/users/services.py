@@ -43,7 +43,7 @@ def verify_email_token(token: str) -> str:
         raise ValueError("Email is already verified.")
     user.email_verified = True
     user.save()
-    return "Email verification successful. You can now log in."
+    return "Email verification successful."
 
 
 def authenticate_user(email: str, password: str) -> CustomUser:
