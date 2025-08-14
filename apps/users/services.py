@@ -18,12 +18,11 @@ def create_user(user_data):
 
 
 def update_user(request: HttpRequest, update_data) -> CustomUser:
-    user = request.auth
+    user = get_user_from_request(request)
     user_data = update_data.dict(exclude_unset=True)
-
-    if not isinstance(user, CustomUser):
-        raise UserNotFound("User not found")
-
+    # remove email and password
+    user_data.pop("password", None)
+    user_data.pop("email", None)
     for key, value in user_data.items():
         if hasattr(user, key):
             setattr(user, key, value)

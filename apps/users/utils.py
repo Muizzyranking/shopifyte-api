@@ -18,3 +18,13 @@ def send_confirmation_email(request: HttpRequest, user: CustomUser):
     confirmation_url = verification_service.create_verification_url(request, token, "verify_email")
     email_service = EmailService()
     return email_service.send_confirmation_email(user, confirmation_url)
+
+
+def get_user_from_request(request: HttpRequest) -> CustomUser:
+    """
+    Retrieve the authenticated user from the request.
+    """
+    user = request.auth
+    if not isinstance(user, CustomUser):
+        raise UserNotFound("User not found or not authenticated.")
+    return user
