@@ -20,7 +20,7 @@ class CustomUser(AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
 
-    class Meta:
+    class Meta(AbstractUser.Meta):
         verbose_name = "user"
         verbose_name_plural = "users"
 
