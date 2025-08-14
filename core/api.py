@@ -19,5 +19,5 @@ api = CustomNinjaExtraAPI(
 
 api = setup_exception_handlers(api)
 
-api.add_router("/auth/", auth_router)
-api.add_router("/profile/", profile_router)
+api.add_router("/auth", auth_router)
+api.add_router("/profile", profile_router)
