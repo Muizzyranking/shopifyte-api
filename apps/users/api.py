@@ -11,6 +11,7 @@ from core.utils import error_message, response_message, response_with_data
 
 from .models import CustomUser
 from .schema import (
+    ChangePasswordSchema,
     LoginDataReponse,
     LoginInput,
     RefreshTokenSchema,
@@ -21,6 +22,7 @@ from .schema import (
 )
 from .services import (
     authenticate_user,
+    change_user_password,
     create_user,
     make_token_for_user,
     refresh_tokens_from_refresh_token,
@@ -132,3 +134,9 @@ def update_email(request, user_data: UpdateEmailSchema):
         )
     except EmailSendError:
         return 202, response_message("Email updated successfully. Email verification is pending.")
+
+
+@profile_router.patch("/password", response=SuccessResponseSchema)
+def change_password(request, payload: ChangePasswordSchema):
+    change_user_password(request, payload)
+    return 200, response_message("Password changed successfully.")

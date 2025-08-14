@@ -102,3 +102,21 @@ class UpdateProfileSchema(Schema):
 
 class UpdateEmailSchema(Schema):
     email: EmailStr = Field(..., examples=["user@email.com"], description="New email address")
+
+
+class ChangePasswordSchema(Schema):
+    """
+    Schema for changing user password
+    """
+
+    old_password: str = Field(..., examples=["oldpassword123"], description="Current password")
+    new_password: str = Field(..., examples=["newpassword123"], description="New password")
+    confirm_new_password: str = Field(
+        ..., examples=["newpassword123"], description="Confirmation of the new password"
+    )
+
+    @field_validator("confirm_new_password")
+    def passwords_match(cls, v, info):
+        if "new_password" in info.data and info.data.get("new_password") != v:
+            raise ValueError("New password and confirmation do not match.")
+        return v

@@ -73,6 +73,21 @@ def verify_email_token(token: str) -> str:
     return "Email verification successful."
 
 
+def change_user_password(request: HttpRequest, password_data):
+    user = get_user_from_request(request)
+    data = password_data.dict()
+    new_password = data.get("new_password")
+    confirm_password = data.get("confirm_new_password")
+    old_password = data.get("old_password")
+    if not user.check_password(old_password):
+        raise ValueError("Old password is incorrect.")
+    if new_password != confirm_password:
+        raise ValueError("New passwords do not match.")
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    return user
+
+
 def authenticate_user(email: str, password: str) -> CustomUser:
     """
     Authenticate user with email and password.
