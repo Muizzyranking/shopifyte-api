@@ -23,7 +23,7 @@ class APIExceptionHandler:
         self.debug = debug if debug is not None else settings.DEBUG
         self._exception_registry = {}
 
-    def _create_error_response(
+    def create_error_response(
         self,
         request: HttpRequest,
         message: str,
@@ -132,7 +132,7 @@ class APIExceptionHandler:
         if self.debug:
             message = f"Response validation error: {self._get_exception_message(exc)}"
 
-        return self._create_error_response(request=request, message=message, status=500)
+        return self.create_error_response(request=request, message=message, status=500)
 
     def _handle_input_validation_error(
         self, request: HttpRequest, exc: Union[ValidationError, PydanticValidationError]
@@ -163,7 +163,7 @@ class APIExceptionHandler:
 
         main_message = self._get_exception_message(exc, "Invalid data provided", True)
         self._log_exception(request, exc, 422)
-        return self._create_error_response(
+        return self.create_error_response(
             request=request,
             errors=errors,
             message=main_message,
@@ -188,7 +188,7 @@ class APIExceptionHandler:
                 exc, "An unexpected error occurred. Please try again later."
             )
 
-        return self._create_error_response(request=request, message=message, status=500)
+        return self.create_error_response(request=request, message=message, status=500)
 
     def _setup_default_handlers(self):
         """Setup default exception handlers"""
@@ -269,7 +269,7 @@ class APIExceptionHandler:
         def handler(request: HttpRequest, exc: Exception) -> HttpResponse:
             self._log_exception(request, exc, status)
             message = self._get_exception_message(exc, fallback_message)
-            return self._create_error_response(
+            return self.create_error_response(
                 request=request, message=message, status=status, errors=errors
             )
 
