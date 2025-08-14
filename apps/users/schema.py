@@ -67,3 +67,21 @@ class RefreshTokenSchema(Schema):
     """
 
     refresh_token: str = Field(..., description="JWT refresh token")
+
+
+class UserProfile(ModelSchema):
+    class Meta:
+        model = CustomUser
+        fields = [
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "email_verified",
+        ]
+
+
+class UserProfileResponse(DataResponseSchema[UserProfile]):
+    message: str = "User profile retrieved successfully"

@@ -90,3 +90,9 @@ def refresh_token(request, data: RefreshTokenSchema):
     token = refresh_tokens_from_refresh_token(data.refresh_token)
 
     return 200, response_with_data("Token refreshed successfully", token)
+
+
+@profile_router.get("", response={200: UserProfileResponse})
+def get_profile(request):
+    user: CustomUser = request.auth
+    return 200, response_with_data("Profile retrieved successfully", user)
