@@ -85,3 +85,16 @@ class UserProfile(ModelSchema):
 
 class UserProfileResponse(DataResponseSchema[UserProfile]):
     message: str = "User profile retrieved successfully"
+
+
+class UpdateProfileSchema(Schema):
+    """
+    Schema for updating user profile
+    """
+
+    first_name: Optional[str] = Field(None, examples=["John"], description="User's first name")
+    last_name: Optional[str] = Field(None, examples=["Doe"], description="User's last name")
+    phone_number: Optional[str] = Field(
+        None, examples=["1234567890"], description="User's phone number"
+    )
+    username: Optional[str] = Field(None, examples=["john_doe"], description="User's username")

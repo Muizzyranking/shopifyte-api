@@ -1,7 +1,9 @@
 from tokenize import TokenError
 from django.contrib.auth import authenticate
+from django.http import HttpRequest
 from ninja_jwt.tokens import RefreshToken
 from core.exceptions.auth import Unauthorized
+from core.exceptions.verification import UserNotFound
 from core.services.verification import TokenType, VerificationService
 from .models import CustomUser
 
@@ -11,6 +13,20 @@ def create_user(user_data):
     password = user_data.pop("password")
     user = CustomUser.objects.create(**user_data)
     user.set_password(password)
+    user.save()
+    return user
+
+
+def update_user(request: HttpRequest, update_data) -> CustomUser:
+    user = request.auth
+    user_data = update_data.dict(exclude_unset=True)
+
+    if not isinstance(user, CustomUser):
+        raise UserNotFound("User not found")
+
+    for key, value in user_data.items():
+        if hasattr(user, key):
+            setattr(user, key, value)
     user.save()
     return user
 

@@ -10,17 +10,26 @@ from core.schema import (
 from core.utils import error_message, response_message, response_with_data
 
 from .models import CustomUser
-from .schema import LoginDataReponse, LoginInput, RefreshTokenSchema, RegisterInput
+from .schema import (
+    LoginDataReponse,
+    LoginInput,
+    RefreshTokenSchema,
+    RegisterInput,
+    UpdateProfileSchema,
+    UserProfileResponse,
+)
 from .services import (
     authenticate_user,
     create_user,
     make_token_for_user,
     refresh_tokens_from_refresh_token,
+    update_user,
     verify_email_token,
 )
 from .utils import send_confirmation_email
 
-auth_router = CustomRouter(tags=["Auth"])
+auth_router = CustomRouter(tags=["auth"])
+profile_router = CustomRouter(tags=["profile"], auth=AuthBearer())
 
 
 @auth_router.post(
@@ -96,3 +105,12 @@ def refresh_token(request, data: RefreshTokenSchema):
 def get_profile(request):
     user: CustomUser = request.auth
     return 200, response_with_data("Profile retrieved successfully", user)
+
+
+@profile_router.patch(
+    "/update",
+    response={200: SuccessResponseSchema},
+)
+def update_profile(request, user_data: UpdateProfileSchema):
+    update_user(request, user_data)
+    return 200, response_message("Profile updated successfully")
