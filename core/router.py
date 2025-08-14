@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, List
 
 from ninja import Router
@@ -11,21 +12,31 @@ from core.schema import (
 )
 
 
+class Methods(str, Enum):
+    POST = "POST"
+    GET = "GET"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+
+
 class CustomRouter(Router):
     """
     Modified ninja router to include global response schemas for all endpoints.
     """
 
+    GLOBAL_RESPONSES = {
+        500: ErrorResponseSchema,
+        401: UnauthorizedResponseSchema,
+        403: ForbiddenResponseSchema,
+    }
+
+    METHOD_SPECIFIC_RESPONSES = {
+        Methods.POST: {422: ValidationErrorResponseSchema},
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._global_responses = {
-            500: ErrorResponseSchema,
-            401: UnauthorizedResponseSchema,
-            403: ForbiddenResponseSchema,
-        }
-        self._method_specific_responses = {
-            "POST": {422: ValidationErrorResponseSchema},
-        }
 
     def api_operation(self, methods: List[str], path: str, *, response: Any = NOT_SET, **kwargs):
         processed_response = self._process_response_with_globals(response, methods)
@@ -33,11 +44,15 @@ class CustomRouter(Router):
 
     def _process_response_with_globals(self, response: Any, methods: List[str]) -> Any:
         """Process the response parameter to add global response schemas"""
-        global_responses = self._global_responses.copy()
+        global_responses = self.GLOBAL_RESPONSES.copy()
         for method in methods:
             method_upper = method.upper()
-            if method_upper in self._method_specific_responses:
-                global_responses.update(self._method_specific_responses[method_upper])
+            try:
+                method_enum = Methods(method_upper)
+                if method_enum in self.METHOD_SPECIFIC_RESPONSES:
+                    global_responses.update(self.METHOD_SPECIFIC_RESPONSES[method_enum])
+            except ValueError:
+                pass
 
         if response is NOT_SET or response is None:
             return global_responses

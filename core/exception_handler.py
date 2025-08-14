@@ -4,8 +4,10 @@ from typing import Callable, Dict, List, Optional, Type, Union
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpRequest, HttpResponse
-from ninja.errors import ValidationError
+from ninja.errors import AuthenticationError, ValidationError
 from ninja_extra import NinjaExtraAPI
+from ninja_extra.exceptions import NotAuthenticated
+from ninja_jwt.exceptions import InvalidToken
 from pydantic import ValidationError as PydanticValidationError
 
 from core.exceptions.auth import Unauthorized
@@ -192,11 +194,12 @@ class APIExceptionHandler:
 
     def _setup_default_handlers(self):
         """Setup default exception handlers"""
-        self.register_handler(ValidationError, self._handle_validation_error)
-        self.register_handler(PydanticValidationError, self._handle_validation_error)
+        self.register_handler(
+            [ValidationError, PydanticValidationError], self._handle_validation_error
+        )
 
         self.register_handler(
-            Unauthorized,
+            [Unauthorized, NotAuthenticated],
             self.create_custom_handler(
                 fallback_message="Authentication required",
                 status=401,
@@ -222,11 +225,29 @@ class APIExceptionHandler:
             ),
         )
 
+        self.register_handler(
+            InvalidToken,
+            self.create_custom_handler(
+                fallback_message="Invalid token",
+                status=401,
+                log_level="warning",
+                force=True,
+            ),
+        )
+
+        self.register_handler(
+            AuthenticationError,
+            self.create_custom_handler(
+                fallback_message="Authentication failed",
+                status=401,
+            ),
+        )
+
         self.register_handler(Exception, self._handle_global_exception)
 
     def register_handler(
         self,
-        exception_class: Type[Exception],
+        exception_classes: Union[Type[Exception], list[Type[Exception]]],
         handler: Callable[[HttpRequest, Exception], HttpResponse],
         override: bool = False,
     ):
@@ -238,16 +259,20 @@ class APIExceptionHandler:
             handler: The handler function
             override: Whether to override existing handlers
         """
-        if exception_class in self._exception_registry and not override:
-            logger.warning(
-                f"Handler for {exception_class.__name__} already exists. "
-                f"Use override=True to replace it."
-            )
-            return
+        if not isinstance(exception_classes, list):
+            exception_classes = [exception_classes]
 
-        self._exception_registry[exception_class] = handler
-        self.api.add_exception_handler(exception_class, handler)
-        logger.info(f"Registered exception handler for {exception_class.__name__}")
+        for exc_class in exception_classes:
+            if exc_class in self._exception_registry and not override:
+                logger.warning(
+                    f"Handler for {exc_class.__name__} already exists. "
+                    f"Use override=True to replace it."
+                )
+                continue
+
+            self._exception_registry[exc_class] = handler
+            self.api.add_exception_handler(exc_class, handler)
+            logger.info(f"Registered exception handler for {exc_class.__name__}")
 
     def create_custom_handler(
         self,
@@ -255,6 +280,7 @@ class APIExceptionHandler:
         status: int,
         errors: Dict[str, List[str]] = None,
         log_level: str = "warning",
+        force: bool = False,
     ) -> Callable[[HttpRequest, Exception], HttpResponse]:
         """
         Create a simple custom handler with predefined response
@@ -268,7 +294,7 @@ class APIExceptionHandler:
 
         def handler(request: HttpRequest, exc: Exception) -> HttpResponse:
             self._log_exception(request, exc, status)
-            message = self._get_exception_message(exc, fallback_message)
+            message = self._get_exception_message(exc, fallback_message, force)
             return self.create_error_response(
                 request=request, message=message, status=status, errors=errors
             )
