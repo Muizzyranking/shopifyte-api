@@ -112,5 +112,5 @@ def get_profile(request):
     response={200: SuccessResponseSchema},
 )
 def update_profile(request, user_data: UpdateProfileSchema):
-    update_user(request, user_data)
+    update_user_profile(request, user_data)
     return 200, response_message("Profile updated successfully")

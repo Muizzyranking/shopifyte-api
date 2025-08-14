@@ -17,7 +17,7 @@ def create_user(user_data):
     return user
 
 
-def update_user(request: HttpRequest, update_data) -> CustomUser:
+def update_user_profile(request: HttpRequest, update_data) -> CustomUser:
     user = get_user_from_request(request)
     user_data = update_data.dict(exclude_unset=True)
     # remove email and password
