@@ -98,3 +98,7 @@ class UpdateProfileSchema(Schema):
         None, examples=["1234567890"], description="User's phone number"
     )
     username: Optional[str] = Field(None, examples=["john_doe"], description="User's username")
+
+
+class UpdateEmailSchema(Schema):
+    email: EmailStr = Field(..., examples=["user@email.com"], description="New email address")

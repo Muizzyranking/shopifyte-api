@@ -1,10 +1,15 @@
 from tokenize import TokenError
+
 from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.http import HttpRequest
 from ninja_jwt.tokens import RefreshToken
+
+from apps.users.utils import get_user_from_request
 from core.exceptions.auth import Unauthorized
-from core.exceptions.verification import UserNotFound
 from core.services.verification import TokenType, VerificationService
+
 from .models import CustomUser
 
 
@@ -27,6 +32,28 @@ def update_user_profile(request: HttpRequest, update_data) -> CustomUser:
         if hasattr(user, key):
             setattr(user, key, value)
     user.save()
+    return user
+
+
+def update_user_email(request: HttpRequest, email_data) -> CustomUser:
+    user = get_user_from_request(request)
+    email_data = email_data.dict()
+    email = email_data.get("email")
+    new_email = (email or "").strip().lower()
+    current_email = (user.email or "").strip().lower()
+    if new_email == current_email:
+        return user
+    try:
+        validate_email(new_email)
+    except DjangoValidationError:
+        raise ValueError("Invalid email address.")
+
+    if CustomUser.objects.filter(email=new_email).exclude(id=user.id).exists():
+        raise ValueError("Email is already in use.")
+
+    user.email = email
+    user.email_verified = False
+    user.save(update_fields=["email", "email_verified"])
     return user
 
 

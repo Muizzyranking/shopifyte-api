@@ -15,6 +15,7 @@ from .schema import (
     LoginInput,
     RefreshTokenSchema,
     RegisterInput,
+    UpdateEmailSchema,
     UpdateProfileSchema,
     UserProfileResponse,
 )
@@ -23,7 +24,8 @@ from .services import (
     create_user,
     make_token_for_user,
     refresh_tokens_from_refresh_token,
-    update_user,
+    update_user_email,
+    update_user_profile,
     verify_email_token,
 )
 from .utils import send_confirmation_email
@@ -107,10 +109,26 @@ def get_profile(request):
     return 200, response_with_data("Profile retrieved successfully", user)
 
 
-@profile_router.patch(
-    "/update",
-    response={200: SuccessResponseSchema},
-)
+@profile_router.patch("", response={200: UserProfileResponse})
 def update_profile(request, user_data: UpdateProfileSchema):
-    update_user_profile(request, user_data)
-    return 200, response_message("Profile updated successfully")
+    user = update_user_profile(request, user_data)
+    return 200, response_with_data("Profile updated successfully", user)
+
+
+@profile_router.patch(
+    "/email",
+    response={
+        200: SuccessResponseSchema,
+        202: SuccessResponseSchema,
+    },
+)
+def update_email(request, user_data: UpdateEmailSchema):
+    try:
+        user = update_user_email(request, user_data)
+        if not user.email_verified:
+            send_confirmation_email(request, user)
+        return 200, response_message(
+            "Email updated successfully. Please check your email for confirmation."
+        )
+    except EmailSendError:
+        return 202, response_message("Email updated successfully. Email verification is pending.")

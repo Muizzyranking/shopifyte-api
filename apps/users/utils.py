@@ -3,6 +3,7 @@ import string
 from django.http import HttpRequest
 
 from apps.users.models import CustomUser
+from core.exceptions.verification import UserNotFound
 from core.services.verification import TokenType, VerificationService
 from core.services.email import EmailService
 
