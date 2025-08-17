@@ -20,3 +20,7 @@ class EmailMisMatch(EmailVerificationError):
     """Raised when email doesn't match token"""
 
     pass
+
+
+class InvalidToken(Exception):
+    pass
