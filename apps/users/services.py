@@ -8,6 +8,8 @@ from ninja_jwt.tokens import RefreshToken
 
 from apps.users.utils import get_user_from_request
 from core.exceptions.auth import Unauthorized
+from core.exceptions.verification import InvalidToken
+from core.services.email import EmailService, EmailType
 from core.services.verification import TokenType, VerificationService
 
 from .models import CustomUser
@@ -86,6 +88,44 @@ def change_user_password(request: HttpRequest, password_data):
     user.set_password(new_password)
     user.save(update_fields=["password"])
     return user
+
+
+def reset_user_password(request, data):
+    data = data.dict()
+    email = data.get("email")
+    try:
+        user: CustomUser = CustomUser.objects.get(email=email)
+        verification_service = VerificationService()
+        email_service = EmailService()
+        token = verification_service.generate_token(user, TokenType.PASSWORD_RESET)
+        context = {"name": user.get_full_name(), "reset_url": token}
+        email_service.send_email(
+            email_type=EmailType.PASSWORD_RESET,
+            to_emails=[user.email],
+            context=context,
+        )
+    except CustomUser.DoesNotExist:
+        # log errror
+        pass
+
+
+def confirm_reset_password(request: HttpRequest, token: str, data):
+    data = data.dict()
+    new_password = data.get("new_password")
+    try:
+        verification_service = VerificationService()
+        verification_result = verification_service.verify_token(token, TokenType.PASSWORD_RESET)
+
+        if not verification_result["valid"]:
+            raise InvalidToken("Invalid token")
+
+        user: CustomUser = verification_result["user"]
+        if user.check_password(new_password):
+            raise ValueError("New password cannot be the same as the old password.")
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+    except Exception:
+        raise
 
 
 def authenticate_user(email: str, password: str) -> CustomUser:

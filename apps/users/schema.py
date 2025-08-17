@@ -120,3 +120,24 @@ class ChangePasswordSchema(Schema):
         if "new_password" in info.data and info.data.get("new_password") != v:
             raise ValueError("New password and confirmation do not match.")
         return v
+
+
+class ResetPasswordSchema(Schema):
+    """
+    Schema for resetting user password
+    """
+
+    email: EmailStr = Field(..., examples=["user@email.com"], description="User's email address")
+
+
+class ConfirmResetPassword(Schema):
+    new_password: str = Field(..., examples=["newpassword123"], description="New password")
+    confirm_new_password: str = Field(
+        ..., examples=["newpassword123"], description="Confirmation of the new password"
+    )
+
+    @model_validator(mode="after")
+    def validate_password(self):
+        if self.new_password != self.confirm_new_password:
+            raise ValueError("New passwords do not match.")
+        return self

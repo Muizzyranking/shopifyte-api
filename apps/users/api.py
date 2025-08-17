@@ -4,6 +4,7 @@ from core.exceptions.verification import EmailMisMatch, UserNotFound
 from core.router import CustomRouter
 from core.schema import (
     BadRequestResponseSchema,
+    ErrorResponseSchema,
     NotFoundResponseSchema,
     SuccessResponseSchema,
 )
@@ -12,10 +13,12 @@ from core.utils import error_message, response_message, response_with_data
 from .models import CustomUser
 from .schema import (
     ChangePasswordSchema,
+    ConfirmResetPassword,
     LoginDataReponse,
     LoginInput,
     RefreshTokenSchema,
     RegisterInput,
+    ResetPasswordSchema,
     UpdateEmailSchema,
     UpdateProfileSchema,
     UserProfileResponse,
@@ -23,9 +26,11 @@ from .schema import (
 from .services import (
     authenticate_user,
     change_user_password,
+    confirm_reset_password,
     create_user,
     make_token_for_user,
     refresh_tokens_from_refresh_token,
+    reset_user_password,
     update_user_email,
     update_user_profile,
     verify_email_token,
@@ -103,6 +108,21 @@ def refresh_token(request, data: RefreshTokenSchema):
     token = refresh_tokens_from_refresh_token(data.refresh_token)
 
     return 200, response_with_data("Token refreshed successfully", token)
+
+
+@auth_router.post("/reset-password/request", response=SuccessResponseSchema)
+def request_password_reset(request, data: ResetPasswordSchema):
+    reset_user_password(request, data)
+    return 200, response_message("Password reset email sent successfully.")
+
+
+@auth_router.post(
+    "/reset-password/confirm/{token}",
+    response={200: SuccessResponseSchema, 400: ErrorResponseSchema},
+)
+def confirm_password_reset(request, token: str, data: ConfirmResetPassword):
+    confirm_reset_password(request, token, data)
+    return 200, response_message("Password reset successful.")
 
 
 @profile_router.get("", response={200: UserProfileResponse})
