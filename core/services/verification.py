@@ -18,6 +18,7 @@ from core.exceptions.verification import EmailMisMatch, TokenExpiredError, UserN
 
 class TokenType(Enum):
     CONFIRMATION = "confirmation"
+    PASSWORD_RESET = "password_reset"
 
 
 class VerificationService:

@@ -13,6 +13,7 @@ from core.exceptions.email import EmailSendError
 
 class EmailType(Enum):
     CONFIRMATION = "confirmation"
+    PASSWORD_RESET = "password_reset"
 
 
 @dataclass
@@ -32,7 +33,12 @@ class EmailConfig:
             description="Confirmation email",
             context=["name", "confirmation_url"],
             template_dir="emails/confirmation",
-        )
+        ),
+        EmailType.PASSWORD_RESET: EmailTypeSchema(
+            description="Password reset email",
+            context=["name", "reset_url"],
+            template_dir="emails/password_reset",
+        ),
     }
 
     @classmethod
