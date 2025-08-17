@@ -7,11 +7,11 @@ from django.http import Http404, HttpRequest, HttpResponse
 from ninja.errors import AuthenticationError, ValidationError
 from ninja_extra import NinjaExtraAPI
 from ninja_extra.exceptions import NotAuthenticated
-from ninja_jwt.exceptions import InvalidToken
+from ninja_jwt.exceptions import InvalidToken as NinjaJwtInvalidToken
 from pydantic import ValidationError as PydanticValidationError
 
 from core.exceptions.auth import Unauthorized
-from core.exceptions.verification import UserNotFound
+from core.exceptions.verification import InvalidToken, UserNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +236,7 @@ class APIExceptionHandler:
         )
 
         self.register_handler(
-            InvalidToken,
+            [InvalidToken, NinjaJwtInvalidToken],
             self.create_custom_handler(
                 fallback_message="Invalid token",
                 status=401,
@@ -250,6 +250,13 @@ class APIExceptionHandler:
             self.create_custom_handler(
                 fallback_message="Authentication failed",
                 status=401,
+            ),
+        )
+        self.register_handler(
+            ValueError,
+            self.create_custom_handler(
+                status=400,
+                fallback_message="Invalid input provided",
             ),
         )
 
