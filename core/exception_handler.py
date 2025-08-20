@@ -10,8 +10,9 @@ from ninja_extra.exceptions import NotAuthenticated
 from ninja_jwt.exceptions import InvalidToken as NinjaJwtInvalidToken
 from pydantic import ValidationError as PydanticValidationError
 
+from apps.users.exceptions import UserNotFound
 from core.exceptions.auth import Unauthorized
-from core.exceptions.verification import InvalidToken, UserNotFound
+from core.exceptions.token import InvalidToken, TokenExpired
 
 logger = logging.getLogger(__name__)
 
@@ -236,7 +237,7 @@ class APIExceptionHandler:
         )
 
         self.register_handler(
-            [InvalidToken, NinjaJwtInvalidToken],
+            NinjaJwtInvalidToken,
             self.create_custom_handler(
                 fallback_message="Invalid token",
                 status=401,
@@ -257,6 +258,13 @@ class APIExceptionHandler:
             self.create_custom_handler(
                 status=400,
                 fallback_message="Invalid input provided",
+            ),
+        )
+
+        self.register_handler(
+            [TokenExpired, InvalidToken],
+            self.create_custom_handler(
+                status=400, fallback_message="Token has expired or is invalid", force=False
             ),
         )
 
