@@ -3,7 +3,7 @@ from django.db import models
 from core.models import TimestampedModel
 
 
-class ImageCetegory(models.TextChoices):
+class ImageCategory(models.TextChoices):
     UNCATEGORIZED = "uncategorized", "Uncategorized"
     PRODUCTS = "products", "Products"
     LOGO = "logo", "Logo"
@@ -20,8 +20,8 @@ class Image(TimestampedModel):
     name = models.CharField(max_length=255)
     category = models.CharField(
         max_length=20,
-        choices=ImageCetegory.choices,
-        default=ImageCetegory.UNCATEGORIZED,
+        choices=ImageCategory.choices,
+        default=ImageCategory.UNCATEGORIZED,
         db_index=True,
     )
     filename = models.CharField(max_length=255)
