@@ -2,10 +2,10 @@ import random
 import string
 from django.http import HttpRequest
 
+from apps.users.exceptions import UserNotFound
 from apps.users.models import CustomUser
-from core.exceptions.verification import UserNotFound
-from core.services.verification import TokenType, VerificationService
 from core.services.email import EmailService
+from core.services.token_service import TokenService, TokenType
 
 
 def generate_code(length: int = 6) -> str:
@@ -14,7 +14,7 @@ def generate_code(length: int = 6) -> str:
 
 
 def send_confirmation_email(request: HttpRequest, user: CustomUser):
-    verification_service = VerificationService()
+    verification_service = TokenService()
     token = verification_service.generate_token(user, TokenType.CONFIRMATION)
     confirmation_url = verification_service.create_verification_url(request, token, "verify_email")
     email_service = EmailService()

@@ -8,9 +8,9 @@ from ninja_jwt.tokens import RefreshToken
 
 from apps.users.utils import get_user_from_request
 from core.exceptions.auth import Unauthorized
-from core.exceptions.verification import InvalidToken
+from core.exceptions.token import InvalidToken
 from core.services.email import EmailService, EmailType
-from core.services.verification import TokenType, VerificationService
+from core.services.token_service import TokenService, TokenType
 
 from .models import CustomUser
 
@@ -60,7 +60,7 @@ def update_user_email(request: HttpRequest, email_data) -> CustomUser:
 
 
 def verify_email_token(token: str) -> str:
-    verification_service = VerificationService()
+    verification_service = TokenService()
     data = verification_service.verify_token(token, TokenType.CONFIRMATION)
     if not data["valid"]:
         raise ValueError("Invalid or expired token.")
@@ -95,7 +95,7 @@ def reset_user_password(request, data):
     email = data.get("email")
     try:
         user: CustomUser = CustomUser.objects.get(email=email)
-        verification_service = VerificationService()
+        verification_service = TokenService()
         email_service = EmailService()
         token = verification_service.generate_token(user, TokenType.PASSWORD_RESET)
         context = {"name": user.get_full_name(), "reset_url": token}
@@ -113,7 +113,7 @@ def confirm_reset_password(request: HttpRequest, token: str, data):
     data = data.dict()
     new_password = data.get("new_password")
     try:
-        verification_service = VerificationService()
+        verification_service = TokenService()
         verification_result = verification_service.verify_token(token, TokenType.PASSWORD_RESET)
 
         if not verification_result["valid"]:
@@ -128,7 +128,7 @@ def confirm_reset_password(request: HttpRequest, token: str, data):
         raise
 
 
-def authenticate_user(email: str, password: str) -> CustomUser:
+def authenticate_user(email: str, password: str):
     """
     Authenticate user with email and password.
 

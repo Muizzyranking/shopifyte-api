@@ -1,6 +1,5 @@
 from core.auth import AuthBearer
 from core.exceptions.email import EmailSendError
-from core.exceptions.verification import EmailMisMatch, UserNotFound
 from core.router import CustomRouter
 from core.schema import (
     BadRequestResponseSchema,
@@ -10,6 +9,7 @@ from core.schema import (
 )
 from core.utils import error_message, response_message, response_with_data
 
+from .exceptions import UserNotFound
 from .models import CustomUser
 from .schema import (
     ChangePasswordSchema,
@@ -81,7 +81,7 @@ def verify_email(request, token: str):
         return 200, response_message(response)
     except UserNotFound as e:
         return 404, error_message(e)
-    except (ValueError, EmailMisMatch) as e:
+    except ValueError as e:
         return 400, error_message(e)
     except Exception as e:
         return 500, error_message(e)
