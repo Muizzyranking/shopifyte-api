@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.files.storage import default_storage
 
 from core.models import TimestampedModel
 
@@ -10,10 +11,46 @@ class ImageCategory(models.TextChoices):
     BANNER = "banner", "Banner"
 
 
-class FileFormat(models.TextChoices):
+class MimeType(models.TextChoices):
+    JPEG = "image/jpeg", "JPEG"
+    PNG = "image/png", "PNG"
+    WEBP = "image/webp", "WebP"
+    GIF = "image/gif", "GIF"
+
+    @classmethod
+    def get_extension(cls, mime_type):
+        mapping = {
+            cls.JPEG: "jpg",
+            cls.PNG: "png",
+            cls.WEBP: "webp",
+            cls.GIF: "gif",
+        }
+        return mapping.get(mime_type, "bin")
+
+
+class ImageFormat(models.TextChoices):
     JPEG = "jpeg", "JPEG"
     PNG = "png", "PNG"
     WEBP = "webp", "WebP"
+    GIF = "gif", "GIF"
+
+    @classmethod
+    def get_mime_type(cls, mime_type):
+        mapping = {
+            cls.JPEG: MimeType.JPEG,
+            cls.PNG: MimeType.PNG,
+            cls.WEBP: MimeType.WEBP,
+            cls.GIF: MimeType.GIF,
+        }
+        return mapping.get(mime_type, MimeType.JPEG)
+
+    @classmethod
+    def get_extension(cls, mime_type):
+        return MimeType.get_extension(cls.get_mime_type(mime_type))
+
+    @classmethod
+    def supported_transparancy(cls, format_name):
+        return format_name in [cls.PNG, cls.JPEG, cls.WEBP, cls.GIF]
 
 
 class Image(TimestampedModel):
@@ -31,11 +68,8 @@ class Image(TimestampedModel):
     width = models.PositiveIntegerField()
     height = models.PositiveIntegerField()
 
-    format = models.CharField(
-        max_length=10,
-        choices=FileFormat.choices,
-        default=FileFormat.JPEG,
-    )
+    format = models.CharField(max_length=10, choices=ImageFormat.choices)
+    mime_type = models.CharField(max_length=50, choices=MimeType.choices)
 
     file_hash = models.CharField(max_length=64, unique=True, db_index=True)
 
@@ -59,13 +93,16 @@ class Image(TimestampedModel):
         verbose_name_plural = "Images"
         db_table = "images"
         ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["category"]),
-            models.Index(fields=["file_hash"]),
-            models.Index(fields=["uploaded_by"]),
-        ]
 
     def get_absolute_url(self):
         from django.urls import reverse
 
         return reverse("image_detail", kwargs={"pk": self.pk})
+
+    def delete_file(self):
+        if self.file_path and default_storage.exists(self.file_path):
+            default_storage.delete(self.file_path)
+
+    def delete(self, *args, **kwargs):
+        self.delete_file()
+        super().delete(*args, **kwargs)
