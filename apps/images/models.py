@@ -35,18 +35,18 @@ class ImageFormat(models.TextChoices):
     GIF = "gif", "GIF"
 
     @classmethod
-    def get_mime_type(cls, mime_type):
+    def get_mime_type(cls, format):
         mapping = {
             cls.JPEG: MimeType.JPEG,
             cls.PNG: MimeType.PNG,
             cls.WEBP: MimeType.WEBP,
             cls.GIF: MimeType.GIF,
         }
-        return mapping.get(mime_type, MimeType.JPEG)
+        return mapping.get(format, MimeType.JPEG)
 
     @classmethod
-    def get_extension(cls, mime_type):
-        return MimeType.get_extension(cls.get_mime_type(mime_type))
+    def get_extension(cls, format):
+        return MimeType.get_extension(cls.get_mime_type(format))
 
     @classmethod
     def supported_transparancy(cls, format_name):
@@ -75,7 +75,11 @@ class Image(TimestampedModel):
 
     alt_text = models.CharField(max_length=500, blank=True, null=True)
     uploaded_by = models.ForeignKey(
-        "Customer", on_delete=models.SET_NULL, related_name="uploaded_images", blank=True, null=True
+        "users.CustomUser",
+        on_delete=models.SET_NULL,
+        related_name="uploaded_images",
+        blank=True,
+        null=True,
     )
 
     # SEO stuff
@@ -95,9 +99,8 @@ class Image(TimestampedModel):
         ordering = ["-created_at"]
 
     def get_absolute_url(self):
-        from django.urls import reverse
-
-        return reverse("image_detail", kwargs={"pk": self.pk})
+        if self.file_path and default_storage.exists(self.file_path):
+            return default_storage.url(self.file_path)
 
     def delete_file(self):
         if self.file_path and default_storage.exists(self.file_path):
