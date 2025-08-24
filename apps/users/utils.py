@@ -25,7 +25,7 @@ def get_user_from_request(request: HttpRequest) -> CustomUser:
     """
     Retrieve the authenticated user from the request.
     """
-    user = request.auth
+    user = getattr(request, "auth", None)
     if not isinstance(user, CustomUser):
         raise UserNotFound("User not found or not authenticated.")
     return user
