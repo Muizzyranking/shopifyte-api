@@ -8,6 +8,7 @@ from PIL import Image as PILImage
 from django.http import Http404
 
 from apps.users.models import CustomUser
+from apps.users.utils import get_user_from_request
 
 from .models import Image, ImageCategory, ImageFormat
 
@@ -71,7 +72,7 @@ class ImageProcessor:
 
 class ImageService:
     def __init__(self):
-        self.file_size = 20
+        self.file_size = 10 * 1024 * 1024  # 20 MB
         self.processor = ImageProcessor()
         pass
 
@@ -138,13 +139,13 @@ class ImageService:
 
     def get_image(self, image_id):
         try:
-            Image.objects.get(id=image_id)
+            return Image.objects.get(id=image_id)
         except Image.DoesNotExist:
             raise Http404("Image not found")
         except Exception:
             raise
 
-    def get_image_file(self, image: Image, transform_data):
+    def get_image_file(self, image: Image, transform_data=None):
         """Get image file content and content type"""
         if not default_storage.exists(image.file_path):
             raise FileNotFoundError("Image file not found")
@@ -203,7 +204,8 @@ class ImageService:
         image.save()
         return image
 
-    def delete_image(self, image: Image, user):
+    def delete_image(self, image: Image, request):
+        user = get_user_from_request(request)
         if image.uploaded_by != user:
             raise PermissionError("You do not have permission to delete this image.")
         image.delete()
