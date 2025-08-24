@@ -86,6 +86,8 @@ class Image(TimestampedModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
+    url = models.URLField(max_length=500, blank=True, null=True)
+
     # View count for analytics
     view_count = models.PositiveIntegerField(default=0)
 
@@ -98,9 +100,17 @@ class Image(TimestampedModel):
         db_table = "images"
         ordering = ["-created_at"]
 
-    def get_absolute_url(self):
-        if self.file_path and default_storage.exists(self.file_path):
-            return default_storage.url(self.file_path)
+    def save(self, *args, **kwargs):
+        if not self.url:
+            self.url = self.get_url()
+        super().save(*args, **kwargs)
+
+    def get_url(self, request, **kwargs):
+        from django.urls import reverse
+
+        return request.build_absolute_uri(
+            reverse("serve_image", kwargs={"image_id": self.id, **kwargs})
+        )
 
     def delete_file(self):
         if self.file_path and default_storage.exists(self.file_path):
