@@ -37,10 +37,10 @@ class ImageFormat(models.TextChoices):
     @classmethod
     def get_mime_type(cls, format):
         mapping = {
-            cls.JPEG: MimeType.JPEG,
-            cls.PNG: MimeType.PNG,
-            cls.WEBP: MimeType.WEBP,
-            cls.GIF: MimeType.GIF,
+            cls.JPEG: MimeType.JPEG.value,
+            cls.PNG: MimeType.PNG.value,
+            cls.WEBP: MimeType.WEBP.value,
+            cls.GIF: MimeType.GIF.value,
         }
         return mapping.get(format, MimeType.JPEG)
 
