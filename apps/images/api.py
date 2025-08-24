@@ -41,7 +41,7 @@ def delete_image(request: HttpRequest, image_id: uuid.UUID):
     return "Image deleted successfully."
 
 
-@img_router.get("/serve/{image_id}")
+@img_router.get("/serve/{image_id}", url_name="serve_image")
 def serve_image(request, image_id: uuid.UUID, parameters: Query[ImageTransformParams]):
     """Serve an image with optional transformations"""
     image = img_service.get_image(image_id)
