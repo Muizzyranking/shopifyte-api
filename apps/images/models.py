@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.files.storage import default_storage
+from django.http import HttpRequest
 
 from core.models import TimestampedModel
 
@@ -100,17 +101,11 @@ class Image(TimestampedModel):
         db_table = "images"
         ordering = ["-created_at"]
 
-    def save(self, *args, **kwargs):
-        if not self.url:
-            self.url = self.get_url()
-        super().save(*args, **kwargs)
-
-    def get_url(self, request, **kwargs):
+    def get_url(self, request: HttpRequest, **kwargs):
         from django.urls import reverse
 
-        return request.build_absolute_uri(
-            reverse("serve_image", kwargs={"image_id": self.id, **kwargs})
-        )
+        namespace = getattr(request.resolver_match, "namespace", None)
+        return reverse(f"{namespace}:serve_image", args=[self.id])
 
     def delete_file(self):
         if self.file_path and default_storage.exists(self.file_path):
