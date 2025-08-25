@@ -12,7 +12,12 @@ from .schemas import ImageResponseSchema, ImageTransformParams, ImageUploadSchem
 from .services import ImageService
 
 img_router = Router(tags=["images"])
-img_service = ImageService()
+
+
+@img_router.get("", auth=AuthBearer(), response={200: list[ImageResponseSchema]})
+def get_images(request: HttpRequest):
+    images = ImageService.get_user_images(request)
+    return images
 
 
 @img_router.post(
@@ -24,28 +29,28 @@ def upload_image(request: HttpRequest, file: File[UploadedFile], data: ImageUplo
     """
     Upload image
     """
-    image = img_service.upload_image(user=request.auth, file=file, data=data or {})
+    image = ImageService.upload_image(request=request, file=file, data=data or {})
     return image
 
 
 @img_router.get("/{image_id}", response={200: ImageResponseSchema})
 def get_image(request: HttpRequest, image_id: uuid.UUID):
-    image = img_service.get_image(image_id)
+    image = ImageService.get_image(image_id)
     return image
 
 
 @img_router.delete("/{image_id}", auth=AuthBearer(), response={200: SuccessResponseSchema})
 def delete_image(request: HttpRequest, image_id: uuid.UUID):
-    image = img_service.get_image(image_id)
-    img_service.delete_image(image, request)
+    image = ImageService.get_image(image_id)
+    ImageService.delete_image(image, request)
     return "Image deleted successfully."
 
 
 @img_router.get("/serve/{image_id}", url_name="serve_image")
 def serve_image(request, image_id: uuid.UUID, parameters: Query[ImageTransformParams]):
     """Serve an image with optional transformations"""
-    image = img_service.get_image(image_id)
-    content, content_type = img_service.get_image_file(image, parameters)
+    image = ImageService.get_image(image_id)
+    content, content_type = ImageService.get_image_file(image, parameters)
 
     data = parameters.dict()
     has_transforms = any(v is not None and v != "" for v in data.values())
@@ -60,5 +65,5 @@ def serve_image(request, image_id: uuid.UUID, parameters: Query[ImageTransformPa
     response = HttpResponse(content, content_type=content_type)
     response["Cache-Control"] = cache_control
     response["ETag"] = f'"{etag}"'
-    response["Content-Disposition"] = f'inline; filename="{image.original_filename}"'
+    response["Content-Disposition"] = f'inline; filename="{image.filename}"'
     return response
