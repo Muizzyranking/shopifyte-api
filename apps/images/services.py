@@ -1,11 +1,13 @@
 import hashlib
 import io
+from typing import Union
+from uuid import UUID
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 from PIL import Image as PILImage
-from django.http import Http404
+from django.http import Http404, HttpRequest
 
 from apps.users.models import CustomUser
 from apps.users.utils import get_user_from_request
@@ -14,7 +16,6 @@ from .models import Image, ImageCategory, ImageFormat
 
 
 class ImageProcessor:
-    MAX_SIZE = 1024
 
     @classmethod
     def allowed_formats(cls):
@@ -71,37 +72,38 @@ class ImageProcessor:
 
 
 class ImageService:
-    def __init__(self):
-        self.file_size = 10 * 1024 * 1024  # 20 MB
-        self.processor = ImageProcessor()
-        pass
 
-    def get_format_info(self, image: PILImage.Image):
+    FILE_SIZE_LIMIT = 10 * 1024 * 1024
+
+    @classmethod
+    def get_format_info(cls, image: PILImage.Image):
         format = image.format.lower() if image.format else "unknown"
 
-        if not format or format not in self.processor.allowed_formats():
+        if not format or format not in ImageProcessor.allowed_formats():
             raise ValueError(f"Unsupported image format: {format}")
 
         mine_type = ImageFormat.get_mime_type(format)
         return format, mine_type
 
+    @classmethod
     def upload_image(
-        self,
-        user: CustomUser,
+        cls,
+        request: HttpRequest,
         file: UploadedFile,
         data,
     ):
+        user: CustomUser = get_user_from_request(request)
         data = data.dict(exclude_unset=True) if hasattr(data, "dict") else data
         category = data.get("category", ImageCategory.UNCATEGORIZED)
         alt_text = data.get("alt_text", "")
         title = data.get("title", "")
         description = data.get("description", "")
-        if file.size and file.size > self.file_size:
+        if file.size and file.size > cls.FILE_SIZE_LIMIT:
             raise ValueError("File size exceeds the maximum limit.")
         file_content = file.read()
         file.seek(0)
 
-        file_hash = self.processor.calculate_hash(file_content)
+        file_hash = ImageProcessor.calculate_hash(file_content)
         existing_image = Image.objects.filter(file_hash=file_hash).first()
 
         if existing_image:
@@ -109,13 +111,13 @@ class ImageService:
 
         try:
             pil_image = PILImage.open(file)
-            image_info = self.processor.get_image_info(pil_image)
-            format, mime_type = self.get_format_info(pil_image)
+            image_info = ImageProcessor.get_image_info(pil_image)
+            format, mime_type = cls.get_format_info(pil_image)
         except Exception:
             raise ValueError("Invalid image file.")
 
         file_extension = ImageFormat.get_extension(mime_type)
-        optimized_image_io = self.processor.optimize_image(pil_image, format)
+        optimized_image_io = ImageProcessor.optimize_image(pil_image, format)
         optmized_content = optimized_image_io.getvalue()
         file_size = len(optmized_content)
         filename = f"{file_hash}.{file_extension}"
@@ -135,18 +137,30 @@ class ImageService:
             title=title,
             description=description,
         )
+        image.url = image.get_url(request)
+        image.save(update_fields=["url"])
         return image
 
-    def get_image(self, image_id):
+    @classmethod
+    def get_image(cls, image: Union[UUID, str, Image]) -> Image:
+        if isinstance(image, Image):
+            return image
         try:
-            return Image.objects.get(id=image_id)
+            return Image.objects.get(id=image)
         except Image.DoesNotExist:
             raise Http404("Image not found")
         except Exception:
             raise
 
-    def get_image_file(self, image: Image, transform_data=None):
+    @classmethod
+    def get_user_images(cls, request):
+        user = get_user_from_request(request)
+        return Image.objects.filter(uploaded_by=user).order_by("-created_at")
+
+    @classmethod
+    def get_image_file(cls, image: Image | UUID, transform_data=None):
         """Get image file content and content type"""
+        image = cls.get_image(image)
         if not default_storage.exists(image.file_path):
             raise FileNotFoundError("Image file not found")
         if transform_data:
@@ -155,19 +169,21 @@ class ImageService:
                 if hasattr(transform_data, "dict")
                 else transform_data
             )
-            return self.transform_image(image, **transform_params)
+            return cls.transform_image(image, **transform_params)
         with default_storage.open(image.file_path, "rb") as f:
             content = f.read()
         return content, image.mime_type
 
+    @classmethod
     def transform_image(
-        self,
+        cls,
         image: Image,
         target_format: ImageFormat = None,
         width: int = None,
         height: int = None,
         quality: int = 85,
     ):
+        image = cls.get_image(image)
         if not default_storage.exists(image.file_path):
             raise FileNotFoundError("Image file not found")
         with default_storage.open(image.file_path, "rb") as f:
@@ -177,24 +193,26 @@ class ImageService:
         if width or height:
             target_width = width if width else image.width
             target_height = height if height else image.height
-            pil_image = self.processor.resize_image(pil_image, target_width, target_height)
+            pil_image = ImageProcessor.resize_image(pil_image, target_width, target_height)
 
         target_format = target_format if target_format else image.format
-        if not target_format or target_format not in self.processor.allowed_formats():
+        if not target_format or target_format not in ImageProcessor.allowed_formats():
             raise ValueError(f"Unsupported target format: {target_format}")
         mime_type = ImageFormat.get_mime_type(target_format)
 
-        optimized_image_io = self.processor.optimize_image(pil_image, target_format, quality)
+        optimized_image_io = ImageProcessor.optimize_image(pil_image, target_format, quality)
         content = optimized_image_io.getvalue()
         return content, mime_type
 
+    @classmethod
     def update_image_metadata(
-        self,
+        cls,
         image: Image,
         alt_text: str = None,
         title: str = None,
         description: str = None,
     ):
+        image = cls.get_image(image)
         if alt_text is not None:
             image.alt_text = alt_text
         if title is not None:
