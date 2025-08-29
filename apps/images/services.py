@@ -6,13 +6,15 @@ from uuid import UUID
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
-from PIL import Image as PILImage
 from django.http import Http404, HttpRequest
+from PIL import Image as PILImage
 
 from apps.users.models import CustomUser
 from apps.users.utils import get_user_from_request
+from core.pagination import Paginator
 
 from .models import Image, ImageCategory, ImageFormat
+from .schemas import ImageResponseSchema
 
 
 class ImageProcessor:
@@ -153,9 +155,16 @@ class ImageService:
             raise
 
     @classmethod
-    def get_user_images(cls, request):
+    def get_user_images(cls, request: HttpRequest, query):
         user = get_user_from_request(request)
-        return Image.objects.filter(uploaded_by=user).order_by("-created_at")
+        query_params = query.dict(exclude_unset=True) if query else {}
+        page = query_params.get("page", 1)
+        page_size = query_params.get("page_size", 10)
+        queryset = Image.objects.filter(uploaded_by=user).order_by("-created_at")
+        paginator = Paginator(
+            request, queryset=queryset, page_size=page_size, schema=ImageResponseSchema
+        )
+        return paginator.get_page(page)
 
     @classmethod
     def get_image_file(cls, image: Image | UUID, transform_data=None):
