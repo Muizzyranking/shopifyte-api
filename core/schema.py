@@ -1,7 +1,7 @@
 from ninja import Schema, Field
-from typing import Dict, Generic, List, TypeVar
+from typing import Dict, Generic, List, Optional, TypeVar
 
-T = TypeVar("T")
+T = TypeVar("T", bound=Schema)
 
 
 class BaseSchema(Schema):
@@ -41,3 +41,18 @@ class NotFoundResponseSchema(BaseSchema):
 
 class BadRequestResponseSchema(BaseSchema):
     message: str = "Bad request"
+
+
+class PaginatedResponseSchema(BaseSchema, Generic[T]):
+    count: int
+    next: Optional[str] = None
+    previous: Optional[str] = None
+    page: int
+    page_size: int = 10
+    total_pages: int
+    data: List[T]
+
+
+class PaginatedQueryParams(Schema):
+    page: int = Field(1, ge=1, description="Page number")
+    page_size: int = Field(10, ge=1, le=100, description="Number of items per page")
