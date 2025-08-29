@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "ninja",
     "apps.users",
     "apps.images",
+    "apps.shops",
 ]
 
 MIDDLEWARE = [
