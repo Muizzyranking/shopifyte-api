@@ -6,17 +6,17 @@ from ninja import File, Query, UploadedFile
 
 from core.auth import AuthBearer
 from core.router import Router
-from core.schema import SuccessResponseSchema
+from core.schema import PaginatedQueryParams, SuccessResponseSchema
 
-from .schemas import ImageResponseSchema, ImageTransformParams, ImageUploadSchema
+from .schemas import ImageResponseSchema, ImageTransformParams, ImageUploadSchema, ImagesResponse
 from .services import ImageService
 
 img_router = Router(tags=["images"])
 
 
-@img_router.get("", auth=AuthBearer(), response={200: list[ImageResponseSchema]})
-def get_images(request: HttpRequest):
-    images = ImageService.get_user_images(request)
+@img_router.get("", auth=AuthBearer(), response={200: ImagesResponse})
+def get_images(request: HttpRequest, query: Query[PaginatedQueryParams] = None):
+    images = ImageService.get_user_images(request, query)
     return images
 
 
