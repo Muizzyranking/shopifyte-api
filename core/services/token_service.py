@@ -21,10 +21,9 @@ class TokenType(Enum):
 
 class TokenService:
     def __init__(self):
-        self.secret_key = getattr(settings, "VERIFICATION_SECRET_KEY")
-        if self.secret_key is None:
-            self.secret_key = getattr(settings, "SECRET_KEY")
-
+        self.secret_key = getattr(settings, "VERIFICATION_SECRET_KEY", None) or getattr(
+            settings, "SECRET_KEY"
+        )
         self.token_expiry_seconds = {
             TokenType.CONFIRMATION: getattr(settings, "VERIFICATION_TIMEOUT", 86400),
             TokenType.PASSWORD_RESET: getattr(settings, "PASSWORD_RESET_TIMEOUT", 3600),
