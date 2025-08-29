@@ -18,6 +18,7 @@ from .models import CustomUser
 def create_user(user_data):
     user_data = user_data.dict()
     password = user_data.pop("password")
+    user_data.pop("confirm_password")
     user = CustomUser.objects.create(**user_data)
     user.set_password(password)
     user.save()
