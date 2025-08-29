@@ -27,6 +27,14 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.email} - ({self.username})"
 
+    def save(self, *args, **kwargs):
+        if not self.username:
+            base_username = self.email.split("@")[0]
+            while CustomUser.objects.filter(username=base_username).exists():
+                base_username += str(uuid.uuid4())[:8]
+            self.username = base_username
+        super().save(*args, **kwargs)
+
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
 
