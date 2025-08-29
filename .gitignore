@@ -21,3 +21,4 @@ sent_emails
 
 **/migrations/*.py
 !*/migrations/__init__.py
+images/uncategorized
