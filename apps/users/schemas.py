@@ -141,3 +141,9 @@ class ConfirmResetPassword(Schema):
         if self.new_password != self.confirm_new_password:
             raise ValueError("New passwords do not match.")
         return self
+
+
+class ResendVerification(Schema):
+    email: Optional[EmailStr] = Field(
+        None, examples=["user@gmail.com"], description="User's email address"
+    )
