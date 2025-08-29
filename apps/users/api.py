@@ -4,12 +4,10 @@ from core.router import CustomRouter
 from core.schema import (
     BadRequestResponseSchema,
     ErrorResponseSchema,
-    NotFoundResponseSchema,
     SuccessResponseSchema,
 )
 from core.utils import error_message, response_message, response_with_data
 
-from .exceptions import UserNotFound
 from .models import CustomUser
 from .schema import (
     ChangePasswordSchema,
@@ -69,28 +67,17 @@ def register_user(request, user_data: RegisterInput):
     "verify-email/{token}",
     url_name="verify_email",
     summary="Verify user email",
-    response={
-        200: SuccessResponseSchema,
-        400: BadRequestResponseSchema,
-        404: NotFoundResponseSchema,
-    },
+    response={200: SuccessResponseSchema},
 )
 def verify_email(request, token: str):
-    try:
-        response = verify_email_token(token)
-        return 200, response_message(response)
-    except UserNotFound as e:
-        return 404, error_message(e)
-    except ValueError as e:
-        return 400, error_message(e)
-    except Exception as e:
-        return 500, error_message(e)
+    response = verify_email_token(token)
+    return 200, response_message(response)
 
 
 @auth_router.post("login", response={200: LoginDataReponse, 400: BadRequestResponseSchema})
 def login(request, data: LoginInput):
     try:
-        user: CustomUser = authenticate_user(data.email, data.password)
+        user = authenticate_user(data.email, data.password)
         token = make_token_for_user(user)
         return 200, response_with_data("Login successful", token)
     except ValueError as e:
