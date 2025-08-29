@@ -63,7 +63,7 @@ def update_user_email(request: HttpRequest, email_data) -> CustomUser:
 def verify_email_token(token: str) -> str:
     verification_service = TokenService()
     data = verification_service.verify_token(token, TokenType.CONFIRMATION)
-    if not data["valid"]:
+    if not data.get("valid", False):
         raise ValueError("Invalid or expired token.")
     user_data = data["user"]
     user = CustomUser.objects.filter(id=user_data.id, email=user_data.email).first()
