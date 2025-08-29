@@ -1,3 +1,4 @@
+from apps.users.exceptions import UserNotFound
 from core.auth import AuthBearer
 from core.exceptions.email import EmailSendError
 from core.router import CustomRouter
@@ -9,13 +10,14 @@ from core.schema import (
 from core.utils import error_message, response_message, response_with_data
 
 from .models import CustomUser
-from .schema import (
+from .schemas import (
     ChangePasswordSchema,
     ConfirmResetPassword,
     LoginDataReponse,
     LoginInput,
     RefreshTokenSchema,
     RegisterInput,
+    ResendVerification,
     ResetPasswordSchema,
     UpdateEmailSchema,
     UpdateProfileSchema,
@@ -33,7 +35,7 @@ from .services import (
     update_user_profile,
     verify_email_token,
 )
-from .utils import send_confirmation_email
+from .utils import get_user_from_request, send_confirmation_email
 
 auth_router = CustomRouter(tags=["auth"])
 profile_router = CustomRouter(tags=["profile"], auth=AuthBearer())
@@ -72,6 +74,23 @@ def register_user(request, user_data: RegisterInput):
 def verify_email(request, token: str):
     response = verify_email_token(token)
     return 200, response_message(response)
+
+
+@auth_router.post("/resend-verification", response={200: SuccessResponseSchema})
+def resend_verification(request, payload: ResendVerification):
+    try:
+        user = get_user_from_request(request)
+        send_confirmation_email(request, user)
+    except UserNotFound:
+        payload_dict = payload.dict()
+        email = payload_dict.get("email")
+        if not email:
+            return 400, error_message("Email is required to resend verification.")
+        user = CustomUser.objects.filter(email=email).first()
+        send_confirmation_email(request, user)
+    except EmailSendError:
+        return 202, response_message("Email verification is pending.")
+    return 200, response_message("Verification email resent successfully.")
 
 
 @auth_router.post("login", response={200: LoginDataReponse, 400: BadRequestResponseSchema})
