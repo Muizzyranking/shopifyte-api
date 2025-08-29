@@ -3,7 +3,6 @@ import hashlib
 import hmac
 import json
 import time
-import uuid
 from enum import Enum
 
 from django.conf import settings
@@ -31,8 +30,9 @@ class TokenService:
         self.cache = cache
 
     @staticmethod
-    def _get_cache_key(prefix: str, identifier: str) -> str:
-        return f"{prefix}:{identifier}"
+    def _get_cache_key(user_id: str, token_type: TokenType) -> str:
+        """Generate cache key for tracking user's token by type"""
+        return f"user_token:{user_id}:{token_type.value}"
 
     def _get_token_expiry(self, token_type: TokenType) -> int:
         """Get expiry time for specific token type"""
@@ -59,22 +59,23 @@ class TokenService:
             raise UserNotFound("Invalid user provided")
 
         token_type = self._validate_token_type(token_type)
-        token_id = str(uuid.uuid4())
+        user_id = str(user.id)
+        cache_key = self._get_cache_key(user_id, token_type)
+        self.cache.delete(cache_key)
         iat = int(time.time())
         token_exp = self._get_token_expiry(token_type)
         exp = iat + token_exp
         payload = {
-            "user_id": str(user.id),
+            "user_id": user_id,
             "email": user.email,
             "iat": iat,
             "exp": exp,
             "type": token_type.value,
-            "token_id": token_id,
         }
         payload_json = json.dumps(payload, separators=(",", ":"))
         payload_b64 = base64.urlsafe_b64encode(payload_json.encode()).decode()
         signature = self.generate_signature(payload_b64)
-        self.cache.set(token_id, payload, timeout=token_exp)
+        self.cache.set(cache_key, payload, timeout=token_exp)
         token = f"{payload_b64}.{signature}"
         return token
 
@@ -97,24 +98,29 @@ class TokenService:
         if time.time() > payload.get("exp", 0):
             raise TokenExpired("Token has expired")
 
-        token_id = payload.get("token_id")
-        cached_payload = self.cache.get(token_id)
-        if cached_payload is None:
-            raise TokenExpired("Token has been used")
-
-        self.cache.delete(token_id)
+        user_id = payload.get("user_id")
         expected_type = self._validate_token_type(token_type)
         token_type_value = payload.get("type")
+
         if token_type_value != expected_type.value:
             raise InvalidToken(
                 f"Token type mismatch: expected {expected_type.value}, got {token_type_value}"
             )
+
+        cache_key = self._get_cache_key(user_id, expected_type)
+        cached_payload = self.cache.get(cache_key)
+
+        if cached_payload is None:
+            raise TokenExpired("Token has been used or expired")
+
+        self.cache.delete(cache_key)
+
         try:
             user = CustomUser.objects.get(id=payload["user_id"])
             if user.email != payload["email"]:
                 raise InvalidToken("Email mismatch in token payload")
 
-            return {"user": user, "payload": payload}
+            return {"user": user, "valid": True}
         except CustomUser.DoesNotExist:
             raise UserNotFound("User not found")
         except Exception as e:
