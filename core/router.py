@@ -5,6 +5,7 @@ from ninja import Router
 from ninja.constants import NOT_SET
 
 from core.schema import (
+    BadRequestResponseSchema,
     ErrorResponseSchema,
     ForbiddenResponseSchema,
     NotFoundResponseSchema,
@@ -29,12 +30,14 @@ class CustomRouter(Router):
     GLOBAL_RESPONSES = {
         500: ErrorResponseSchema,
         401: UnauthorizedResponseSchema,
+        400: BadRequestResponseSchema,
         403: ForbiddenResponseSchema,
     }
 
     METHOD_SPECIFIC_RESPONSES = {
         Methods.POST: {422: ValidationErrorResponseSchema},
         Methods.PATCH: {404: NotFoundResponseSchema},
+        Methods.GET: {404: NotFoundResponseSchema},
     }
 
     def __init__(self, *args, **kwargs):
