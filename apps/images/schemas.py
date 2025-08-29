@@ -3,6 +3,8 @@ from typing import Optional
 from ninja import ModelSchema, Schema
 from pydantic import field_validator
 
+from core.schema import PaginatedResponseSchema
+
 from .models import Image, ImageCategory
 
 
@@ -37,3 +39,7 @@ class ImageTransformParams(Schema):
     height: Optional[int] = None
     format: Optional[str] = None
     quality: Optional[int] = None
+
+
+class ImagesResponse(PaginatedResponseSchema[ImageResponseSchema]):
+    message: str = "Images retrieved successfully"
