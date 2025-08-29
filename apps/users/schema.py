@@ -14,7 +14,7 @@ class RegisterInput(Schema):
 
     email: EmailStr = Field(..., examples=["user@email.com"], description="User's email address")
     username: Optional[str] = Field(
-        ..., examples=["john_doe"], description="Unique username for the user"
+        None, examples=["john_doe"], description="Unique username for the user"
     )
     first_name: str = Field(..., examples=["John"], description="Unique username for the user")
     last_name: str = Field(..., examples=["Doe"], description="Unique username for the user")
