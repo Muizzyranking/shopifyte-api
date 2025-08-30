@@ -28,9 +28,9 @@ class Shop(TimestampedModel):
     email = models.EmailField(blank=True, null=True)
 
     # address
-    address_line_2 = models.CharField(max_length=255, blank=True)
+    address_line = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=100, blank=True)
-    state_province = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
     postal_code = models.CharField(max_length=20, blank=True)
     country = models.CharField(max_length=100, blank=True)
 
