@@ -1,0 +1,14 @@
+Hi {{ name }},
+
+Congratulations! Your shop "{{ shop_name }}" has been successfully created.
+
+You can start managing your shop at: {{ dashboard_url }}
+Your shop will be visible to customers at: {{ shop_url }}
+
+Next steps:
+- Add products to your shop
+- Complete your shop profile
+- Upload a shop logo
+
+Best regards,
+The Marketplace Team

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Welcome to {{ shop_name }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+        .next-steps { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🎉 Welcome to Your New Shop!</h1>
+        <h2>{{ shop_name }}</h2>
+      </div>
+      <div class="content">
+        <p>
+          Hi <strong>{{ name }}</strong>,
+        </p>
+        <p>
+          Congratulations! Your shop "<strong>{{ shop_name }}</strong>" has been successfully created and is now ready for business!
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="{{ dashboard_url }}" class="button">Manage Your Shop</a>
+          <a href="{{ shop_url }}" class="button">View Your Shop</a>
+        </div>
+        <div class="next-steps">
+          <h3>🚀 Next Steps to Get Started:</h3>
+          <ol>
+            <li>
+              <strong>Add Products:</strong> Start adding your first products to attract customers
+            </li>
+            <li>
+              <strong>Complete Your Profile:</strong> Add contact information, social media links, and business details
+            </li>
+            <li>
+              <strong>Upload a Logo:</strong> Make your shop stand out with a professional logo
+            </li>
+            <li>
+              <strong>Set Up Payment:</strong> Configure your payment methods to start receiving orders
+            </li>
+          </ol>
+        </div>
+        <p>
+          Your shop is now visible to customers at: <a href="{{ shop_url }}">{{ shop_url }}</a>
+        </p>
+        <p>Need help getting started? Check out our seller guide or contact our support team.</p>
+      </div>
+      <div class="footer">
+        <p>
+          Happy selling!
+          <br>
+          <strong>The Marketplace Team</strong>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

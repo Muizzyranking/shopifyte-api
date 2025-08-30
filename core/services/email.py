@@ -14,6 +14,7 @@ from core.exceptions.email import EmailSendError
 class EmailType(Enum):
     CONFIRMATION = "confirmation"
     PASSWORD_RESET = "password_reset"
+    SHOP_WECLOME = "shop_welcome"
 
 
 @dataclass
@@ -38,6 +39,11 @@ class EmailConfig:
             description="Password reset email",
             context=["name", "reset_url"],
             template_dir="emails/password_reset",
+        ),
+        EmailType.SHOP_WECLOME: EmailTypeSchema(
+            description="Shop welcome email",
+            context=["name", "shop_name", "shop_url", "dashboard_url"],
+            template_dir="emails/shop_welcome",
         ),
     }
 
