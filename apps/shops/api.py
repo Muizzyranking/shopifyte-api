@@ -1,0 +1,17 @@
+from apps.users.utils import get_user_from_request
+from core.auth import AuthBearer
+from core.router import CustomRouter as Router
+from core.schema import SuccessResponseSchema
+from core.utils import response_message
+
+from .schemas import ShopCreateSchema
+from .services import create_shop_for_user
+
+shop_router = Router(tags=["shops"])
+
+
+@shop_router.post("", auth=AuthBearer(), response={200: SuccessResponseSchema})
+def create_shop(request, data: ShopCreateSchema):
+    user = get_user_from_request(request)
+    create_shop_for_user(request, data, user)
+    return response_message("Shop created successfully")
