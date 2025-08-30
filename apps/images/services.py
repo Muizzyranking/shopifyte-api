@@ -123,7 +123,7 @@ class ImageService:
         optmized_content = optimized_image_io.getvalue()
         file_size = len(optmized_content)
         filename = f"{file_hash}.{file_extension}"
-        upload_path = f"images/{category}/{filename}"
+        upload_path = f"media/images/{category}/{filename}"
         save_path = default_storage.save(upload_path, ContentFile(optmized_content))
         image = Image.objects.create(
             uploaded_by=user,
