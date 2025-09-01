@@ -11,7 +11,9 @@ from PIL import Image as PILImage
 
 from apps.users.models import CustomUser
 from apps.users.utils import get_user_from_request
+from core.cache import Cache
 from core.pagination import Paginator
+from core.utils import get_seconds
 
 from .models import Image, ImageCategory, ImageFormat
 from .schemas import ImageResponseSchema
@@ -76,6 +78,10 @@ class ImageProcessor:
 class ImageService:
 
     FILE_SIZE_LIMIT = 10 * 1024 * 1024
+
+    user_images_cache = Cache(prefix="user_images", timeout=get_seconds(minutes=10))
+    image_cache = Cache(prefix="image_cache", timeout=get_seconds(minutes=30))
+    image_transform_cache = Cache(prefix="image_transform", timeout=get_seconds(hours=1))
 
     @classmethod
     def get_format_info(cls, image: PILImage.Image):
@@ -160,11 +166,24 @@ class ImageService:
         query_params = query.dict(exclude_unset=True) if query else {}
         page = query_params.get("page", 1)
         page_size = query_params.get("page_size", 10)
+
+        key_data = {
+            "page": page,
+            "page_size": page_size,
+        }
+        cache_key = cls.user_images_cache.generate_key(key_data, suffix=f"user_{str(user.id)}")
+        cached_response = cls.user_images_cache.get(cache_key)
+
+        if cached_response:
+            return cached_response
+
         queryset = Image.objects.filter(uploaded_by=user).order_by("-created_at")
         paginator = Paginator(
             request, queryset=queryset, page_size=page_size, schema=ImageResponseSchema
         )
-        return paginator.get_page(page)
+        page_obj = paginator.get_page(page)
+        cls.user_images_cache.set(cache_key, page_obj)
+        return page_obj
 
     @classmethod
     def get_image_file(cls, image: Image | UUID, transform_data=None):
@@ -172,6 +191,14 @@ class ImageService:
         image = cls.get_image(image)
         if not default_storage.exists(image.file_path):
             raise FileNotFoundError("Image file not found")
+
+        cache_key = None
+        if transform_data is None:
+            cache_key = cls.image_cache.generate_key({"file_hash": image.file_hash})
+            cached_content = cls.image_cache.get(cache_key) if cache_key else None
+            if cached_content:
+                return cached_content
+
         if transform_data:
             transform_params = (
                 transform_data.dict(exclude_unset=True)
@@ -179,9 +206,13 @@ class ImageService:
                 else transform_data
             )
             return cls.transform_image(image, **transform_params)
+
         with default_storage.open(image.file_path, "rb") as f:
             content = f.read()
-        return content, image.mime_type
+        result = (content, image.mime_type)
+        if cache_key:
+            cls.image_cache.set(cache_key, result)
+        return result
 
     @classmethod
     def transform_image(
@@ -195,6 +226,18 @@ class ImageService:
         image = cls.get_image(image)
         if not default_storage.exists(image.file_path):
             raise FileNotFoundError("Image file not found")
+        transform_params = {
+            "target_format": target_format,
+            "width": width,
+            "height": height,
+            "quality": quality,
+        }
+        cache_key = cls.image_transform_cache.generate_key(transform_params, suffix=image.file_hash)
+        cached_content = cls.image_transform_cache.get(cache_key)
+
+        if cached_content:
+            return cached_content
+
         with default_storage.open(image.file_path, "rb") as f:
             pil_image = PILImage.open(f)
             pil_image.load()
@@ -211,7 +254,9 @@ class ImageService:
 
         optimized_image_io = ImageProcessor.optimize_image(pil_image, target_format, quality)
         content = optimized_image_io.getvalue()
-        return content, mime_type
+        result = (content, mime_type)
+        cls.image_transform_cache.set(cache_key, result)
+        return result
 
     @classmethod
     def update_image_metadata(

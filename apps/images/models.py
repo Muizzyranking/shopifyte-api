@@ -1,7 +1,10 @@
 from django.db import models
 from django.core.files.storage import default_storage
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django.http import HttpRequest
 
+from apps.images.services import ImageService
 from core.models import TimestampedModel
 
 
@@ -114,3 +117,19 @@ class Image(TimestampedModel):
     def delete(self, *args, **kwargs):
         self.delete_file()
         super().delete(*args, **kwargs)
+
+
+@receiver([post_save, post_delete], sender=Image)
+def invalidate_cache_on_image_delete(sender, instance, **kwargs):
+    """
+    Invalidate relevant caches when an Image is created, updated, or deleted.
+    """
+    if instance.uploaded_by:
+        user_cache_pattern = f"user_images:{instance.uploaded_by.id}_*"
+        ImageService.user_images_cache.delete_pattern(user_cache_pattern)
+
+    image_cache_key = ImageService.image_cache.generate_key({"file_hash": instance.file_hash})
+    ImageService.image_cache.delete(image_cache_key)
+
+    transform_cache_pattern = f"image_transform:hash_{instance.file_hash[:12]}_*"
+    ImageService.image_transform_cache.delete_pattern(transform_cache_pattern)
