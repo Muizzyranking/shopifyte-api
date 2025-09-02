@@ -1,10 +1,7 @@
-from django.db import models
 from django.core.files.storage import default_storage
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
+from django.db import models
 from django.http import HttpRequest
 
-from apps.images.services import ImageService
 from core.models import TimestampedModel
 
 
