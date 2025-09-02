@@ -147,6 +147,7 @@ class ImageService:
         )
         image.url = image.get_url(request)
         image.save(update_fields=["url"])
+        cls.clear_cache(image)
         return image
 
     @classmethod
@@ -274,10 +275,23 @@ class ImageService:
         if description is not None:
             image.description = description
         image.save()
+        cls.clear_cache(image)
         return image
 
-    def delete_image(self, image: Image, request):
+    @classmethod
+    def delete_image(cls, image: Image, request):
         user = get_user_from_request(request)
         if image.uploaded_by != user:
             raise PermissionError("You do not have permission to delete this image.")
+        cls.clear_cache(image)
         image.delete()
+
+    @classmethod
+    def clear_cache(cls, image: Image):
+        if image.uploaded_by:
+            cls.user_images_cache.delete_pattern(f"user_{image.uploaded_by.id}_*")
+
+        image_cache_key = cls.image_cache.generate_key({"file_hash": image.file_hash})
+        cls.image_cache.delete(image_cache_key)
+
+        cls.image_transform_cache.delete_pattern(f"*{image.file_hash}*")
