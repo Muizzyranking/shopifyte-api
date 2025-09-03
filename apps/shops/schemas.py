@@ -1,6 +1,9 @@
 from typing import Optional
-from ninja import Field, Schema
+from ninja import Field, ModelSchema, Schema
 from pydantic import EmailStr
+
+from apps.shops.models import Shop
+from core.schema import PaginatedResponseSchema
 
 
 class ShopCreateSchema(Schema):
@@ -17,3 +20,24 @@ class ShopCreateSchema(Schema):
     state: Optional[str] = None
     postal_code: Optional[str] = None
     country: Optional[str] = None
+
+
+class ShopFilters(Schema):
+    status: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+
+
+class ShopSchema(ModelSchema):
+    class Meta:
+        model = Shop
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+        ]
+
+
+class ShopListSchema(PaginatedResponseSchema[ShopSchema]):
+    message: str = "Shops retrieved successfully"
