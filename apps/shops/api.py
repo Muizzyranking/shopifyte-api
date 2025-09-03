@@ -1,11 +1,14 @@
+from django.http import HttpRequest
+from ninja import Query
+
 from apps.users.utils import get_user_from_request
 from core.auth import AuthBearer
 from core.router import CustomRouter as Router
-from core.schema import SuccessResponseSchema
+from core.schema import PaginatedQueryParams, SuccessResponseSchema
 from core.utils import response_message
 
-from .schemas import ShopCreateSchema
-from .services import create_shop_for_user
+from .schemas import ShopCreateSchema, ShopFilters, ShopListSchema
+from .services import create_shop_for_user, get_all_shops
 
 shop_router = Router(tags=["shops"])
 
@@ -15,3 +18,12 @@ def create_shop(request, data: ShopCreateSchema):
     user = get_user_from_request(request)
     create_shop_for_user(request, data, user)
     return response_message("Shop created successfully")
+
+
+@shop_router.get("", response={200: ShopListSchema})
+def get_shops(
+    request: HttpRequest,
+    filters: Query[ShopFilters] = None,
+    pagination: Query[PaginatedQueryParams] = None,
+):
+    return get_all_shops(request, filters, pagination)
