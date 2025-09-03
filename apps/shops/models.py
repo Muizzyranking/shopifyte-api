@@ -1,4 +1,7 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 from core.models import BaseModel, TimestampedModel
 from django.utils.text import slugify
 
@@ -66,6 +69,13 @@ class Shop(TimestampedModel):
     def get_url(self):
         return f"/shops/{self.slug}"
 
+    @property
+    def logo_url(self):
+        """Get the stored logo URL for this shop"""
+        if hasattr(self, "profile") and self.profile.logo:
+            return self.profile.logo.url
+        return None
+
 
 class ShopProfile(TimestampedModel):
     shop = models.OneToOneField(Shop, on_delete=models.CASCADE, related_name="profile")
@@ -100,3 +110,15 @@ class ShopProfile(TimestampedModel):
 
     def __str__(self):
         return f"Profile of {self.shop.name}"
+
+    def get_logo_url(self):
+        if self.logo:
+            return self.logo.url
+        return None
+
+
+@receiver(post_save, sender=Shop)
+def create_shop_profile(sender, instance, created, **kwargs):
+    if created:
+        if not hasattr(instance, "profile"):
+            ShopProfile.objects.create(shop=instance)
