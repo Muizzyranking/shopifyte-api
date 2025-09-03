@@ -9,6 +9,7 @@ from .schemas import ShopSchema
 from .utils import send_shop_welcome_email
 
 shop_list_cache = Cache(prefix="shop_list", timeout=get_seconds(minutes=15))
+shop_detail_cache = Cache(prefix="shop_detail", timeout=get_seconds(minutes=30))
 
 
 def create_shop_for_user(request, shop_data, user):
@@ -53,3 +54,16 @@ def get_all_shops(request: HttpRequest, filters, pagination):
     result = paginator.get_page(page_number)
     shop_list_cache.set(cache_key, result)
     return result
+
+
+def get_shop_by_slug(shop_slug: str):
+    try:
+        # key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+        # cached_shop = shop_detail_cache.get(key)
+        # if cached_shop:
+        #     return cached_shop
+        shop = Shop.objects.select_related("profile", "profile__logo").get(slug=shop_slug)
+        # shop_detail_cache.set(key, shop)
+        return shop
+    except Shop.DoesNotExist:
+        raise
