@@ -23,7 +23,7 @@ class Cache:
             key = f"{self.prefix}:{key}"
         return key
 
-    def generate_key(self, data: dict, suffix: str) -> str:
+    def generate_key(self, data: dict[str, Any], suffix: str = None) -> str:
         try:
             sorted_data = json.dumps(data, sort_keys=True)
         except Exception:
@@ -61,8 +61,10 @@ class Cache:
             print(f"Cant delete cache for key: {key}")
             return False
 
-    def delete_pattern(self, pattern: str):
+    def delete_pattern(self, pattern: str, suffix: str = ""):
         try:
+            if not pattern.endswith("*"):
+                pattern += "*"
             pattern = self._prefix_key(pattern)
             if hasattr(self.cache, "delete_pattern"):
                 return self.cache.delete_pattern(pattern)
