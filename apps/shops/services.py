@@ -58,12 +58,12 @@ def get_all_shops(request: HttpRequest, filters, pagination):
 
 def get_shop_by_slug(shop_slug: str):
     try:
-        # key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
-        # cached_shop = shop_detail_cache.get(key)
-        # if cached_shop:
-        #     return cached_shop
+        key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+        cached_shop = shop_detail_cache.get(key)
+        if cached_shop:
+            return cached_shop
         shop = Shop.objects.select_related("profile", "profile__logo").get(slug=shop_slug)
-        # shop_detail_cache.set(key, shop)
+        shop_detail_cache.set(key, shop)
         return shop
     except Shop.DoesNotExist:
         raise
