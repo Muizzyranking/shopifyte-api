@@ -5,9 +5,14 @@ from apps.users.utils import get_user_from_request
 from core.auth import AuthBearer
 from core.router import CustomRouter as Router
 from core.schema import PaginatedQueryParams, SuccessResponseSchema
-from core.utils import response_message
+from core.utils import response_message, response_with_data
 
-from .schemas import ShopCreateSchema, ShopFilters, ShopListSchema, ShopSchema
+from .schemas import (
+    ShopCreateSchema,
+    ShopDetailResponse,
+    ShopFilters,
+    ShopListSchema,
+)
 from .services import create_shop_for_user, get_all_shops, get_shop_by_slug
 
 shop_router = Router(tags=["shops"])
@@ -29,6 +34,7 @@ def get_shops(
     return get_all_shops(request, filters, pagination)
 
 
-@shop_router.get("/{shop_slug}", response=ShopSchema)
+@shop_router.get("/{shop_slug}", response=ShopDetailResponse)
 def get_shop(request: HttpRequest, shop_slug: str):
-    return get_shop_by_slug(shop_slug)
+    data = get_shop_by_slug(shop_slug)
+    return response_with_data("Shop details retrieved successfully", data=data)
