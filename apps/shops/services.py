@@ -98,7 +98,7 @@ def update_shop_for_user(request, shop_slug, data):
             "instagram_url",
             "twitter_url",
         ]
-        data_dict = data.dict() if hasattr(data, "dict") else {}
+        data_dict = data.dict(exclude_unset=True) if hasattr(data, "dict") else {}
 
         shop_data = {k: v for k, v in data_dict.items() if k in shop_fields}
         profile_data = {k: v for k, v in data_dict.items() if k in shop_profile_fields}
@@ -114,10 +114,11 @@ def update_shop_for_user(request, shop_slug, data):
         shop.save()
 
         if profile_data:
+            profile, _ = ShopProfile.objects.get_or_create(shop=shop)
             for field, value in profile_data.items():
-                if value is not None and hasattr(shop.profile, field):
+                if value is not None and hasattr(profile, field):
                     setattr(shop.profile, field, value)
-            shop.profile.save()
+            profile.save()
 
         shop_list_cache.clear()
         shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
@@ -154,3 +155,20 @@ def upload_logo_for_shop(request, shop_slug, logo):
         raise ShopNotFound("Shop not found or you do not have permission to update it.")
     except Exception:
         raise
+
+
+def delete_logo_for_shop(request, shop_slug):
+    user = get_user_from_request(request)
+    try:
+        shop = Shop.objects.get(slug=shop_slug, owner=user)
+        profile = getattr(shop, "profile", None)
+        if profile and profile.logo:
+            logo = profile.logo
+            profile.logo = None
+            ImageService.delete_image(logo, request)
+            profile.save(update_fields=["logo", "updated_at"])
+            shop_list_cache.clear()
+            shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+            shop_detail_cache.delete(shop_detail_key)
+    except Exception:
+        pass
