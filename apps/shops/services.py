@@ -1,5 +1,7 @@
 from django.http import HttpRequest
 
+from apps.shops.exceptions import ShopNotFound
+from apps.users.utils import get_user_from_request
 from core.cache import Cache
 from core.pagination import Paginator
 from core.utils import get_seconds
@@ -64,6 +66,56 @@ def get_shop_by_slug(shop_slug: str):
             return cached_shop
         shop = Shop.objects.select_related("profile", "profile__logo").get(slug=shop_slug)
         shop_detail_cache.set(key, shop)
+        return shop
+
+
+def update_shop_for_user(request, shop_slug, data):
+    user = get_user_from_request(request)
+
+    try:
+        shop = Shop.objects.get(slug=shop_slug, owner=user)
+        shop_fields = [
+            "name",
+            "slug",
+            "description",
+            "email",
+            "address_line",
+            "city",
+            "state",
+            "postal_code",
+            "country",
+        ]
+        shop_profile_fields = [
+            "phone",
+            "website_url",
+            "facebook_url",
+            "instagram_url",
+            "twitter_url",
+        ]
+        data_dict = data.dict() if hasattr(data, "dict") else {}
+
+        shop_data = {k: v for k, v in data_dict.items() if k in shop_fields}
+        profile_data = {k: v for k, v in data_dict.items() if k in shop_profile_fields}
+
+        if shop_data.get("slug"):
+            existing_shop = Shop.objects.filter(slug=shop_data["slug"]).exclude(id=shop.id)
+            if existing_shop.exists():
+                raise ValueError("The provided slug is already in use by another shop.")
+
+        for field, value in shop_data.items():
+            if value is not None and hasattr(shop, field):
+                setattr(shop, field, value)
+        shop.save()
+
+        if profile_data:
+            for field, value in profile_data.items():
+                if value is not None and hasattr(shop.profile, field):
+                    setattr(shop.profile, field, value)
+            shop.profile.save()
+
+        shop_list_cache.clear()
+        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+        shop_detail_cache.delete(shop_detail_key)
         return shop
     except Shop.DoesNotExist:
         raise
