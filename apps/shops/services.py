@@ -122,4 +122,6 @@ def update_shop_for_user(request, shop_slug, data):
         shop_detail_cache.delete(shop_detail_key)
         return shop
     except Shop.DoesNotExist:
+        raise ShopNotFound("Shop not found or you do not have permission to update it.")
+    except Exception:
         raise
