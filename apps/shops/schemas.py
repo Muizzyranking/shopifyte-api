@@ -116,6 +116,27 @@ class ShopDetailSchema(ModelSchema):
     def resolve_member_since(obj):
         return obj.created_at.strftime("%B %Y")  # e.g., "January 2024"
 
+
 class ShopDetailResponse(Schema):
     message: str = "Shop details retrieved successfully"
     data: ShopDetailSchema
+
+
+class ShopUpdateSchema(Schema):
+    # Shop fields
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    description: Optional[str] = None
+    email: Optional[str] = None
+    address_line: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+
+    # Profile fields
+    phone: Optional[str] = None
+    website_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    instagram_url: Optional[str] = None
+    twitter_url: Optional[str] = None
