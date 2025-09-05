@@ -31,7 +31,7 @@ def create_shop_for_user(request, shop_data, user):
         country=shop_data.country,
     )
     ShopProfile.objects.create(shop=shop)
-    shop_list_cache.clear()
+    _clear_shop_cache()
     send_shop_welcome_email(request, user, shop)
     return shop
 
@@ -121,10 +121,7 @@ def update_shop_for_user(request, shop_slug, data):
                 if value is not None and hasattr(profile, field):
                     setattr(shop.profile, field, value)
             profile.save()
-
-        shop_list_cache.clear()
-        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
-        shop_detail_cache.delete(shop_detail_key)
+        _clear_shop_cache(shop_slug)
         return shop
     except Shop.DoesNotExist:
         raise ShopNotFound("Shop not found or you do not have permission to update it.")
@@ -142,9 +139,7 @@ def upload_logo_for_shop(request, shop_slug, logo):
         image = ImageService.upload_image(request, logo, data)
         profile.logo = image
         profile.save(update_fields=["logo", "updated_at"])
-        shop_list_cache.clear()
-        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
-        shop_detail_cache.delete(shop_detail_key)
+        _clear_shop_cache(shop_slug)
 
         if old_logo:
             try:
@@ -169,9 +164,7 @@ def delete_logo_for_shop(request, shop_slug):
             profile.logo = None
             ImageService.delete_image(logo, request)
             profile.save(update_fields=["logo", "updated_at"])
-            shop_list_cache.clear()
-            shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
-            shop_detail_cache.delete(shop_detail_key)
+            _clear_shop_cache(shop_slug)
     except Exception:
         pass
 
@@ -197,10 +190,16 @@ def activate_shop_for_user(request, shop_slug):
         shop = Shop.objects.get(slug=shop_slug, owner=user)
         shop.status = ShopStatus.ACTIVE
         shop.save(update_fields=["status", "updated_at"])
-        shop_list_cache.clear()
-        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
-        shop_detail_cache.delete(shop_detail_key)
+        _clear_shop_cache(shop_slug)
     except Shop.DoesNotExist:
         raise ShopNotFound("Shop not found or you do not have permission to delete it.")
     except Exception:
         raise
+
+
+def _clear_shop_cache(shop_slug: str = None) -> None:
+    """Clear shop-related caches."""
+    shop_list_cache.clear()
+    if shop_slug:
+        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+        shop_detail_cache.delete(shop_detail_key)
