@@ -12,8 +12,9 @@ from .schemas import (
     ShopDetailResponse,
     ShopFilters,
     ShopListSchema,
+    ShopUpdateSchema,
 )
-from .services import create_shop_for_user, get_all_shops, get_shop_by_slug
+from .services import create_shop_for_user, get_all_shops, get_shop_by_slug, update_shop_for_user
 
 shop_router = Router(tags=["shops"])
 
@@ -38,3 +39,9 @@ def get_shops(
 def get_shop(request: HttpRequest, shop_slug: str):
     data = get_shop_by_slug(shop_slug)
     return response_with_data("Shop details retrieved successfully", data=data)
+
+
+@shop_router.patch("/{shop_slug}", auth=AuthBearer(), response={200: SuccessResponseSchema})
+def update_shop(request, shop_slug: str, data: ShopUpdateSchema):
+    update_shop_for_user(request, shop_slug, data)
+    return response_message("Shop updated successfully")
