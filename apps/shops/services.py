@@ -1,5 +1,7 @@
 from django.http import HttpRequest
 
+from apps.images.models import ImageCategory
+from apps.images.services import ImageService
 from apps.shops.exceptions import ShopNotFound
 from apps.users.utils import get_user_from_request
 from core.cache import Cache
@@ -120,6 +122,33 @@ def update_shop_for_user(request, shop_slug, data):
         shop_list_cache.clear()
         shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
         shop_detail_cache.delete(shop_detail_key)
+        return shop
+    except Shop.DoesNotExist:
+        raise ShopNotFound("Shop not found or you do not have permission to update it.")
+    except Exception:
+        raise
+
+
+def upload_logo_for_shop(request, shop_slug, logo):
+    user = get_user_from_request(request)
+    try:
+        shop = Shop.objects.get(slug=shop_slug, owner=user)
+        profile, _ = ShopProfile.objects.get_or_create(shop=shop)
+        old_logo = profile.logo
+        data = {"category": ImageCategory.SHOP_LOGO, "title": f"{shop.name} Logo"}
+        image = ImageService.upload_image(request, logo, data)
+        profile.logo = image
+        profile.save(update_fields=["logo", "updated_at"])
+        shop_list_cache.clear()
+        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+        shop_detail_cache.delete(shop_detail_key)
+
+        if old_logo:
+            try:
+                ImageService.delete_image(old_logo, request)
+            except Exception:
+                pass  # do nothing
+
         return shop
     except Shop.DoesNotExist:
         raise ShopNotFound("Shop not found or you do not have permission to update it.")

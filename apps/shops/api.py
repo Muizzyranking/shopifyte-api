@@ -1,6 +1,7 @@
 from django.http import HttpRequest
-from ninja import Query
+from ninja import File, Query, UploadedFile
 
+from apps.images.services import ImageService
 from apps.users.utils import get_user_from_request
 from core.auth import AuthBearer
 from core.router import CustomRouter as Router
@@ -12,9 +13,16 @@ from .schemas import (
     ShopDetailResponse,
     ShopFilters,
     ShopListSchema,
+    ShopSchemaResponse,
     ShopUpdateSchema,
 )
-from .services import create_shop_for_user, get_all_shops, get_shop_by_slug, update_shop_for_user
+from .services import (
+    create_shop_for_user,
+    get_all_shops,
+    get_shop_by_slug,
+    update_shop_for_user,
+    upload_logo_for_shop,
+)
 
 shop_router = Router(tags=["shops"])
 
@@ -45,3 +53,9 @@ def get_shop(request: HttpRequest, shop_slug: str):
 def update_shop(request, shop_slug: str, data: ShopUpdateSchema):
     update_shop_for_user(request, shop_slug, data)
     return response_message("Shop updated successfully")
+
+
+@shop_router.post("/{shop_slug}/logo", auth=AuthBearer(), response={200: ShopSchemaResponse})
+def upload_shop_logo(request: HttpRequest, shop_slug: str, logo: File[UploadedFile]):
+    shop = upload_logo_for_shop(request, shop_slug, logo)
+    return 200, response_with_data("Image uploaded successfully", data=shop)
