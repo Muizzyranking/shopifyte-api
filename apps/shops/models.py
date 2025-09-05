@@ -83,12 +83,6 @@ class ShopProfile(TimestampedModel):
     phone = models.CharField(max_length=20, blank=True, null=True)
     website_url = models.URLField(blank=True, null=True)
 
-    address_line = models.CharField(max_length=255, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    state_province = models.CharField(max_length=100, blank=True)
-    postal_code = models.CharField(max_length=20, blank=True)
-    country = models.CharField(max_length=100, blank=True)
-
     logo = models.ForeignKey(
         "images.Image", on_delete=models.SET_NULL, null=True, blank=True, related_name="shop_logos"
     )
