@@ -10,7 +10,7 @@ from django.core.cache import cache
 
 from apps.users.exceptions import UserNotFound
 from apps.users.models import CustomUser
-from core.exceptions.token import InvalidToken, TokenExpired
+from core.exceptions import InvalidToken, TokenExpired
 
 
 class TokenType(Enum):

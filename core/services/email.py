@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 
 from apps.users.models import CustomUser
-from core.exceptions.email import EmailSendError
+from core.exceptions import EmailSendError
 
 
 class EmailType(Enum):

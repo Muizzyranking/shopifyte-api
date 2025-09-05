@@ -1,6 +1,6 @@
 from apps.users.exceptions import UserNotFound
 from core.auth import AuthBearer
-from core.exceptions.email import EmailSendError
+from core.exceptions import EmailSendError
 from core.router import CustomRouter
 from core.schema import (
     BadRequestResponseSchema,

@@ -7,8 +7,8 @@ from django.http import HttpRequest
 from ninja_jwt.tokens import RefreshToken
 
 from apps.users.utils import get_user_from_request
-from core.exceptions.auth import Unauthorized
-from core.exceptions.token import InvalidToken
+from core.exceptions import Unauthorized
+from core.exceptions import InvalidToken
 from core.services.email import EmailService, EmailType
 from core.services.token_service import TokenService, TokenType
 
