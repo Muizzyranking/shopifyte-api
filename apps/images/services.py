@@ -112,7 +112,7 @@ class ImageService:
         file.seek(0)
 
         file_hash = ImageProcessor.calculate_hash(file_content)
-        existing_image = Image.objects.filter(file_hash=file_hash).first()
+        existing_image = Image.objects.filter(file_hash=file_hash, uploaded_by=user).first()
 
         if existing_image:
             return existing_image
@@ -134,6 +134,7 @@ class ImageService:
         image = Image.objects.create(
             uploaded_by=user,
             filename=filename,
+            category=category,
             file_path=save_path,
             file_size=file_size,
             file_hash=file_hash,
@@ -281,6 +282,7 @@ class ImageService:
     @classmethod
     def delete_image(cls, image: Image, request):
         user = get_user_from_request(request)
+        image = cls.get_image(image)
         if image.uploaded_by != user:
             raise PermissionError("You do not have permission to delete this image.")
         cls.clear_cache(image)
