@@ -40,6 +40,11 @@ class ShopSchema(ModelSchema):
         return obj.logo_url
 
 
+class ShopSchemaResponse(Schema):
+    message: str = "Shop retrieved successfully"
+    data: ShopSchema
+
+
 class ShopListSchema(PaginatedResponseSchema[ShopSchema]):
     message: str = "Shops retrieved successfully"
 
