@@ -135,7 +135,7 @@ def upload_logo_for_shop(request, shop_slug, logo):
         shop = Shop.objects.get(slug=shop_slug, owner=user)
         profile, _ = ShopProfile.objects.get_or_create(shop=shop)
         old_logo = profile.logo
-        data = {"category": ImageCategory.SHOP_LOGO, "title": f"{shop.name} Logo"}
+        data = {"category": ImageCategory.LOGO, "title": f"{shop.name} Logo"}
         image = ImageService.upload_image(request, logo, data)
         profile.logo = image
         profile.save(update_fields=["logo", "updated_at"])

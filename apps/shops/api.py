@@ -56,6 +56,6 @@ def update_shop(request, shop_slug: str, data: ShopUpdateSchema):
 
 
 @shop_router.post("/{shop_slug}/logo", auth=AuthBearer(), response={200: ShopSchemaResponse})
-def upload_shop_logo(request: HttpRequest, shop_slug: str, logo: File[UploadedFile]):
+def upload_shop_logo(request: HttpRequest, logo: File[UploadedFile], shop_slug: str):
     shop = upload_logo_for_shop(request, shop_slug, logo)
     return 200, response_with_data("Image uploaded successfully", data=shop)
