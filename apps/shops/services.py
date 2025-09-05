@@ -67,6 +67,10 @@ def get_shop_by_slug(shop_slug: str):
         shop = Shop.objects.select_related("profile", "profile__logo").get(slug=shop_slug)
         shop_detail_cache.set(key, shop)
         return shop
+    except Shop.DoesNotExist:
+        raise ShopNotFound("Shop with the given slug does not exist.")
+    except Exception:
+        raise
 
 
 def update_shop_for_user(request, shop_slug, data):
