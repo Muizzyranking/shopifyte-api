@@ -1,7 +1,6 @@
 from django.http import HttpRequest
 from ninja import File, Query, UploadedFile
 
-from apps.images.services import ImageService
 from apps.users.utils import get_user_from_request
 from core.auth import AuthBearer
 from core.router import CustomRouter as Router
@@ -18,6 +17,7 @@ from .schemas import (
 )
 from .services import (
     create_shop_for_user,
+    delete_logo_for_shop,
     get_all_shops,
     get_shop_by_slug,
     update_shop_for_user,
@@ -59,3 +59,9 @@ def update_shop(request, shop_slug: str, data: ShopUpdateSchema):
 def upload_shop_logo(request: HttpRequest, logo: File[UploadedFile], shop_slug: str):
     shop = upload_logo_for_shop(request, shop_slug, logo)
     return 200, response_with_data("Image uploaded successfully", data=shop)
+
+
+@shop_router.delete("/{shop_slug}/logo", auth=AuthBearer(), response={200: SuccessResponseSchema})
+def delete_shop_logo(request: HttpRequest, shop_slug: str):
+    delete_logo_for_shop(request, shop_slug)
+    return 200, response_message("Logo deleted successfully")
