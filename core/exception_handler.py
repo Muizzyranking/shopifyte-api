@@ -10,9 +10,8 @@ from ninja_extra.exceptions import NotAuthenticated
 from ninja_jwt.exceptions import InvalidToken as NinjaJwtInvalidToken
 from pydantic import ValidationError as PydanticValidationError
 
-from apps.users.exceptions import UserNotFound
-from core.exceptions.auth import Unauthorized
-from core.exceptions.token import InvalidToken, TokenExpired
+from core.exceptions import NotFound, Unauthorized
+from core.exceptions import InvalidToken, TokenExpired
 
 logger = logging.getLogger(__name__)
 
@@ -216,11 +215,12 @@ class APIExceptionHandler:
         )
 
         self.register_handler(
-            UserNotFound,
+            [NotFound, Http404],
             self.create_custom_handler(
-                fallback_message="User not found",
+                fallback_message="Resource not found",
                 status=404,
-                force=True,
+                force=False,
+                log_level="info",
             ),
         )
 
@@ -230,15 +230,6 @@ class APIExceptionHandler:
                 fallback_message="Permission denied",
                 status=403,
                 log_level="warning",
-            ),
-        )
-
-        self.register_handler(
-            Http404,
-            self.create_custom_handler(
-                fallback_message="Resource not found",
-                status=404,
-                log_level="info",
             ),
         )
 
