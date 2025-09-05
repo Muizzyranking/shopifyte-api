@@ -16,9 +16,10 @@ from .schemas import (
     ShopUpdateSchema,
 )
 from .services import (
+    activate_shop_for_user,
     create_shop_for_user,
-    delete_logo_for_shop,
     deactivate_shop_for_user,
+    delete_logo_for_shop,
     get_all_shops,
     get_shop_by_slug,
     update_shop_for_user,
@@ -74,3 +75,11 @@ def delete_shop_logo(request: HttpRequest, shop_slug: str):
 def deactivate_shop(request: HttpRequest, shop_slug: str):
     deactivate_shop_for_user(request, shop_slug)
     return 200, response_message("Shop has been deactivated successfully")
+
+
+@shop_router.patch(
+    "/{shop_slug}/activate", auth=AuthBearer(), response={200: SuccessResponseSchema}
+)
+def activate_shop(request: HttpRequest, shop_slug: str):
+    activate_shop_for_user(request, shop_slug)
+    return 200, response_message("Shop has been activated successfully")

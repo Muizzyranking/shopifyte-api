@@ -176,11 +176,26 @@ def delete_logo_for_shop(request, shop_slug):
         pass
 
 
-def delete_shop_for_user(request, shop_slug):
+def deactivate_shop_for_user(request, shop_slug):
     user = get_user_from_request(request)
     try:
         shop = Shop.objects.get(slug=shop_slug, owner=user)
         shop.status = ShopStatus.INACTIVE
+        shop.save(update_fields=["status", "updated_at"])
+        shop_list_cache.clear()
+        shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
+        shop_detail_cache.delete(shop_detail_key)
+    except Shop.DoesNotExist:
+        raise ShopNotFound("Shop not found or you do not have permission to delete it.")
+    except Exception:
+        raise
+
+
+def activate_shop_for_user(request, shop_slug):
+    user = get_user_from_request(request)
+    try:
+        shop = Shop.objects.get(slug=shop_slug, owner=user)
+        shop.status = ShopStatus.ACTIVE
         shop.save(update_fields=["status", "updated_at"])
         shop_list_cache.clear()
         shop_detail_key = shop_detail_cache.generate_key({"shop_slug": shop_slug})
