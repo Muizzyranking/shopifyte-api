@@ -17,6 +17,8 @@ shop_detail_cache = Cache(prefix="shop_detail", timeout=get_seconds(minutes=30))
 
 
 def create_shop_for_user(request, shop_data, user):
+    if Shop.objects.filter(owner=user).exists():
+        raise ValueError("User already has a shop.")
     shop = Shop.objects.create(
         owner=user,
         name=shop_data.name,
