@@ -18,6 +18,7 @@ from .schemas import (
 from .services import (
     create_shop_for_user,
     delete_logo_for_shop,
+    deactivate_shop_for_user,
     get_all_shops,
     get_shop_by_slug,
     update_shop_for_user,
@@ -65,3 +66,11 @@ def upload_shop_logo(request: HttpRequest, logo: File[UploadedFile], shop_slug: 
 def delete_shop_logo(request: HttpRequest, shop_slug: str):
     delete_logo_for_shop(request, shop_slug)
     return 200, response_message("Logo deleted successfully")
+
+
+@shop_router.delete(
+    "/{shop_slug}/deactivate", auth=AuthBearer(), response={200: SuccessResponseSchema}
+)
+def deactivate_shop(request: HttpRequest, shop_slug: str):
+    deactivate_shop_for_user(request, shop_slug)
+    return 200, response_message("Shop has been deactivated successfully")
