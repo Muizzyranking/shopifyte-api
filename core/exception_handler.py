@@ -112,7 +112,7 @@ class APIExceptionHandler:
             return status
         return default
 
-    def _log_exception(self, request: HttpRequest, exc: Exception, status: int = 500):
+    def log_exception(self, request: HttpRequest, exc: Exception, status: int = 500):
         """Securely log exceptions with relevant context"""
         log_data = {
             "exception_type": type(exc).__name__,
@@ -147,7 +147,7 @@ class APIExceptionHandler:
     def _handle_output_validation_error(
         self, request: HttpRequest, exc: Union[ValidationError, PydanticValidationError]
     ) -> HttpResponse:
-        self._log_exception(request, exc, 500)
+        self.log_exception(request, exc, 500)
         message = "An internal error occurred while processing."
         if self.debug:
             message = f"Response validation error: {self._get_exception_message(exc)}"
@@ -182,7 +182,7 @@ class APIExceptionHandler:
                         errors["general"].append(error)
 
         main_message = self._get_exception_message(exc, "Invalid data provided", True)
-        self._log_exception(request, exc, 422)
+        self.log_exception(request, exc, 422)
         return self.create_error_response(
             request=request,
             errors=errors,
@@ -199,7 +199,7 @@ class APIExceptionHandler:
 
     def _handle_global_exception(self, request: HttpRequest, exc: Exception) -> HttpResponse:
         """Handle all other exceptions with security considerations"""
-        self._log_exception(request, exc, 500)
+        self.log_exception(request, exc, 500)
 
         if self.debug:
             message = self._get_exception_message(exc, f"Internal server error: {str(exc)}")
@@ -216,7 +216,7 @@ class APIExceptionHandler:
         """
         message = self._get_exception_message(exc, "Permission denied")
         status_code = self._get_status_code(exc, 403)
-        self._log_exception(request, exc, status_code)
+        self.log_exception(request, exc, status_code)
         return self.create_error_response(request=request, message=message, status=status_code)
 
     def setup_default_handlers(self):
@@ -337,7 +337,7 @@ class APIExceptionHandler:
         """
 
         def handler(request: HttpRequest, exc: Exception) -> HttpResponse:
-            self._log_exception(request, exc, status)
+            self.log_exception(request, exc, status)
             message = self._get_exception_message(exc, fallback_message, force)
             return self.create_error_response(
                 request=request, message=message, status=status, errors=errors
