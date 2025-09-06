@@ -1,6 +1,7 @@
 from apps.users.exceptions import UserNotFound
 from core.auth import AuthBearer
 from core.exceptions import EmailSendError
+from core.permissions import BasePermission
 from core.router import CustomRouter
 from core.schema import (
     BadRequestResponseSchema,
@@ -133,7 +134,7 @@ def confirm_password_reset(request, token: str, data: ConfirmResetPassword):
 
 @profile_router.get("", response={200: UserProfileResponse})
 def get_profile(request):
-    user: CustomUser = request.auth
+    user: CustomUser = get_user_from_request(request)
     return 200, response_with_data("Profile retrieved successfully", user)
 
 
