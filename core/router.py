@@ -1,9 +1,12 @@
 from enum import Enum
-from typing import Any, List
+from functools import wraps
+import types
+from typing import Any, List, Union
 
 from ninja import Router
 from ninja.constants import NOT_SET
 
+from core.permissions import BasePermission, check_permissions
 from core.schema import (
     BadRequestResponseSchema,
     ErrorResponseSchema,
@@ -41,11 +44,66 @@ class CustomRouter(Router):
     }
 
     def __init__(self, *args, **kwargs):
+        self.permissions = kwargs.pop("permissions", None)
         super().__init__(*args, **kwargs)
+        http_methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
-    def api_operation(self, methods: List[str], path: str, *, response: Any = NOT_SET, **kwargs):
+        for method in http_methods:
+            setattr(self, method.lower(), self._bind_methods(method.upper()))
+
+    def _bind_methods(self, method):
+        def method_handler(
+            self,
+            path,
+            permissions: Union[List[BasePermission], BasePermission] = None,
+            response: Any = NOT_SET,
+            **kwargs,
+        ):
+            """
+            This is a handler that overrides the default method handler (get, post, put, patch, delete)
+            It adds `permissions` parameter to check permissions for the endpoint
+
+            Since the default calls self.api_operation but doesn't include `permissions` parameter, I am
+            overriding it here to include `permissions` parameter.
+
+            @router.get("/my-endpoint", permissions=[IsAuthenticated])
+            """
+            return self.api_operation(
+                [method], path, response=response, permissions=permissions, **kwargs
+            )
+
+        return types.MethodType(method_handler, self)
+
+    def api_operation(
+        self,
+        methods: List[str],
+        path: str,
+        *,
+        response: Any = NOT_SET,
+        permissions: Union[List[BasePermission], BasePermission] = None,
+        **kwargs,
+    ):
+        """
+        Override the default api operation so that it can:
+            - Add global response: It adds default response schema so I do not have to repeat for all endpoints
+            - Add `permission` parameter: This adds permission parameter to endpoint so permissions can be checked
+        """
         processed_response = self._process_response_with_globals(response, methods)
-        return super().api_operation(methods, path, response=processed_response, **kwargs)
+
+        def decorator(view_func: Any):
+            @wraps(view_func)
+            def wrapped_view_func(*view_args, **view_kwargs):
+                request = view_args[0]
+                if permissions:
+                    check_permissions(request, permissions, view_func)
+                return view_func(*view_args, **view_kwargs)
+
+            self.add_api_operation(
+                path, methods, wrapped_view_func, response=processed_response, **kwargs
+            )
+            return wrapped_view_func
+
+        return decorator
 
     def _process_response_with_globals(self, response: Any, methods: List[str]) -> Any:
         """Process the response parameter to add global response schemas"""
