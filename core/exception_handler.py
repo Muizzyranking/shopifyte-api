@@ -101,6 +101,16 @@ class APIExceptionHandler:
 
         return f"An error occurred: {type(exc).__name__}"
 
+    @staticmethod
+    def _get_status_code(exc: Exception, default: int = 500) -> int:
+        """
+        Gets the status code from an exception if available
+        """
+        status = getattr(exc, "status_code", None)
+        if isinstance(status, int) and 100 <= status <= 599:
+            return status
+        return default
+
     def _log_exception(self, request: HttpRequest, exc: Exception, status: int = 500):
         """Securely log exceptions with relevant context"""
         log_data = {
