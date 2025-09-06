@@ -2,7 +2,7 @@ import logging
 from typing import Callable, Dict, List, Optional, Type, Union
 
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied as DangoPermissionDenied
 from django.http import Http404, HttpRequest, HttpResponse
 from ninja.errors import AuthenticationError, ValidationError
 from ninja_extra import NinjaExtraAPI
@@ -12,6 +12,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from core.exceptions import NotFound, Unauthorized
 from core.exceptions import InvalidToken, TokenExpired
+from core.permissions import PermissionDenied
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +210,16 @@ class APIExceptionHandler:
 
         return self.create_error_response(request=request, message=message, status=500)
 
-    def _setup_default_handlers(self):
+    def _permission_exception(self, request: HttpRequest, exc: PermissionDenied) -> HttpResponse:
+        """
+        Handles exceptions raised from permission checks
+        """
+        message = self._get_exception_message(exc, "Permission denied")
+        status_code = self._get_status_code(exc, 403)
+        self._log_exception(request, exc, status_code)
+        return self.create_error_response(request=request, message=message, status=status_code)
+
+    def setup_default_handlers(self):
         """Setup default exception handlers"""
         self.register_handler(
             [ValidationError, PydanticValidationError], self._handle_validation_error
@@ -234,8 +244,10 @@ class APIExceptionHandler:
             ),
         )
 
+        self.register_handler(PermissionDenied, self._permission_exception)
+
         self.register_handler(
-            PermissionDenied,
+            DangoPermissionDenied,
             self.create_custom_handler(
                 fallback_message="Permission denied",
                 status=403,
@@ -335,7 +347,7 @@ class APIExceptionHandler:
 
     def apply_handlers(self) -> NinjaExtraAPI:
         """Apply all registered handlers to the API"""
-        self._setup_default_handlers()
+        self.setup_default_handlers()
         return self.api
 
 
