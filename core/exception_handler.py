@@ -85,11 +85,11 @@ class APIExceptionHandler:
         if force and fallback_message:
             return fallback_message
 
-        if hasattr(exc, "detail"):
-            return str(exc.detail)
-
         if hasattr(exc, "message"):
             return str(exc.message)
+
+        if hasattr(exc, "detail"):
+            return str(exc.detail)
 
         exc_message = str(exc).strip()
 
