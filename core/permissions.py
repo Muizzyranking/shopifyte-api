@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Union
 from django.http import HttpRequest
 
 
@@ -26,20 +26,29 @@ class BasePermission:
 
 
 def check_permissions(
-    request: HttpRequest, permissions: list[BasePermission], view_func: Any = None
+    request: HttpRequest,
+    permissions: Union[list[BasePermission], BasePermission],
+    view_func: Any = None,
 ):
+    """
+    Checks if the request has the required permissions.
+    """
     if not permissions:
         return True
 
+    if not isinstance(permissions, list):
+        permissions = [permissions]
+
     for permission in permissions:
-        if not permission.has_permission(request, view_func):
-            permission.permission_denied()
+        permission_instance = None
+        if isinstance(permission, type) and issubclass(permission, BasePermission):
+            permission_instance = permission()
+        elif isinstance(permission, BasePermission):
+            permission_instance = permission
+        else:
+            continue
+
+        if not permission_instance.has_permission(request, view_func):
+            permission_instance.permission_denied()
 
     return True
-
-
-def execute_view(
-    view_func: Callable, request: HttpRequest, permissions: list[BasePermission], *args, **kwargs
-):
-    check_permissions(request, permissions, view_func)
-    return view_func(request, *args, **kwargs)
