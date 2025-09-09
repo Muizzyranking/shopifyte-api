@@ -1,3 +1,3 @@
-from django.contrib import admin
+from core.utils import register_all_models
 
-# Register your models here.
+register_all_models("products")
