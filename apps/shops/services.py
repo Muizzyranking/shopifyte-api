@@ -9,7 +9,6 @@ from core.pagination import Paginator
 from core.utils import get_seconds
 
 from .models import Shop, ShopProfile, ShopStatus
-from .schemas import ShopSchema
 from .utils import send_shop_welcome_email
 
 shop_list_cache = Cache(prefix="shop_list", timeout=get_seconds(minutes=15))
@@ -54,9 +53,7 @@ def get_all_shops(request: HttpRequest, filters, pagination):
     queryset = Shop.objects.select_related("profile", "profile__logo").filter(
         status=ShopStatus.ACTIVE
     )
-    paginator = Paginator(
-        request=request, queryset=queryset, page_size=page_size, schema=ShopSchema
-    )
+    paginator = Paginator(request=request, queryset=queryset, page_size=page_size)
     result = paginator.get_page(page_number)
     shop_list_cache.set(cache_key, result)
     return result

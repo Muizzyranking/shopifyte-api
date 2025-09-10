@@ -16,7 +16,6 @@ from core.pagination import Paginator
 from core.utils import get_seconds
 
 from .models import Image, ImageCategory, ImageFormat
-from .schemas import ImageResponseSchema
 
 
 class ImageProcessor:
@@ -180,9 +179,7 @@ class ImageService:
             return cached_response
 
         queryset = Image.objects.filter(uploaded_by=user).order_by("-created_at")
-        paginator = Paginator(
-            request, queryset=queryset, page_size=page_size, schema=ImageResponseSchema
-        )
+        paginator = Paginator(request, queryset=queryset, page_size=page_size)
         page_obj = paginator.get_page(page)
         cls.user_images_cache.set(cache_key, page_obj)
         return page_obj
