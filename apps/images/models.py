@@ -1,8 +1,9 @@
 from django.core.files.storage import default_storage
 from django.db import models
-from django.http import HttpRequest
 
 from core.models import TimestampedModel
+
+IMAGE_PATH = "api/images/serve"
 
 
 class ImageCategory(models.TextChoices):
@@ -87,8 +88,6 @@ class Image(TimestampedModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
-    url = models.URLField(max_length=500, blank=True, null=True)
-
     # View count for analytics
     view_count = models.PositiveIntegerField(default=0)
 
@@ -101,11 +100,21 @@ class Image(TimestampedModel):
         db_table = "images"
         ordering = ["-created_at"]
 
-    def get_url(self, request: HttpRequest, **kwargs):
-        from django.urls import reverse
+    def get_url(self, **kwargs):
+        query_params = "&".join(
+            f"{key}={value}" for key, value in kwargs.items() if value is not None
+        )
+        return (
+            f"{IMAGE_PATH}/{self.id}?{query_params}" if query_params else f"{IMAGE_PATH}/{self.id}"
+        )
 
-        namespace = getattr(request.resolver_match, "namespace", None)
-        return reverse(f"{namespace}:serve_image", args=[self.id])
+    @property
+    def url(self):
+        return self.get_url()
+
+    @property
+    def thumbnail(self, width=400, height=400):
+        return self.get_url(width=width, height=height)
 
     def delete_file(self):
         if self.file_path and default_storage.exists(self.file_path):
