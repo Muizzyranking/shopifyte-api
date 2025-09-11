@@ -1,5 +1,6 @@
 from ninja_extra import NinjaExtraAPI
 
+from apps.products.api import products_router
 from apps.shops.api import shop_router
 from apps.users.api import auth_router, profile_router
 from apps.images.api import img_router
@@ -25,3 +26,4 @@ api.add_router("/auth", auth_router)
 api.add_router("/profile", profile_router)
 api.add_router("/images", img_router)
 api.add_router("/shops", shop_router)
+api.add_router("/products", products_router)
