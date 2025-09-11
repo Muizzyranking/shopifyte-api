@@ -1,60 +1,93 @@
-from typing import Union
+from django.db.models import Prefetch, Q
 
-from django.db.models import Prefetch
-
+from core.cache import Cache
 from core.pagination import Paginator
+from core.utils import get_seconds
 
 from .models import Product, ProductImages
-from .schemas import ProductFilters
 
 
-def get_all_products(request, filters: Union[ProductFilters, None] = None):
-    page = getattr(filters, "page", 1) if filters else 1
-    page_size = getattr(filters, "page_size", 10) if filters else 10
-    qs = (
-        Product.objects.select_related("shop", "category")
-        .prefetch_related(
-            Prefetch(
-                "images",
-                queryset=ProductImages.objects.select_related("image").filter(primary=True),
-                to_attr="prefetched_primary_image",
+class ProductService:
+    cache = Cache(prefix="products", timeout=get_seconds(minutes=15))
+
+    @classmethod
+    def _generate_cache_key(cls, prefix: str, **kwargs):
+        cache_key_data = {k: v for k, v in kwargs.items() if v is not None}
+        return cls.cache.generate_key(cache_key_data, suffix=prefix)
+
+    @staticmethod
+    def _base_queryset(active: bool = True):
+        return (
+            Product.objects.select_related("shop", "category")
+            .prefetch_related(
+                Prefetch(
+                    "images",
+                    queryset=ProductImages.objects.select_related("image").filter(primary=True),
+                    to_attr="prefetched_primary_image",
+                ),
+                Prefetch(
+                    "images",
+                    queryset=ProductImages.objects.select_related("image").filter(primary=False),
+                    to_attr="prefetched_gallery_image",
+                ),
             )
+            .filter(is_active=active)
         )
-        .filter(is_active=True)
-        .order_by("-created_at")
-    )
-    qs = filter_products(qs, filters)
 
-    paginator = Paginator(request, qs, page_size=page_size)
-    return paginator.get_page(page)
+    @classmethod
+    def get_products(cls, request, filters):
+        page = getattr(filters, "page", 1) if filters else 1
+        page_size = getattr(filters, "page_size", 10) if filters else 10
 
+        cache_key = cls._generate_cache_key(
+            prefix="list", page=page, page_size=page_size, filters=filters or {}
+        )
 
-def filter_products(qs, filters):
-    if filters:
-        if filters.category:
-            qs = qs.filter(category__name__iexact=filters.category)
+        cache_result = cls.cache.get(cache_key)
+        if cache_result:
+            return cache_result
 
-        if filters.search:
-            qs = qs.filter(name__icontains=filters.search)
+        qs = cls._base_queryset()
+        if filters:
+            qs = cls._apply_filters(qs, filters)
 
-        if filters.shop:
-            qs = qs.filter(shop__name__iexact=filters.shop)
+        qs.order_by("-created_at")
 
-        if filters.min_price is not None:
-            qs = qs.filter(price__gte=filters.min_price)
+        paginator = Paginator(request, qs, page_size)
+        result = paginator.get_page(page)
+        cls.cache.set(cache_key, result)
+        return result
 
-        if filters.max_price is not None:
-            qs = qs.filter(price__lte=filters.max_price)
+    @staticmethod
+    def _apply_filters(queryset, filters):
 
-        if filters.in_stock is True:
-            qs = qs.filter(stock__gt=0)
+        if not filters:
+            return queryset
 
-        if filters.on_sale is True:
-            qs = qs.filter(discount_price__isnull=False)
+            # Price range filter
+        if "min_price" in filters and filters["min_price"]:
+            queryset = queryset.filter(price__gte=filters["min_price"])
 
-        if filters.sort == "price_asc":
-            qs = qs.order_by("price")
-        elif filters.sort == "price_desc":
-            qs = qs.order_by("-price")
+        if "max_price" in filters and filters["max_price"]:
+            queryset = queryset.filter(price__lte=filters["max_price"])
 
-    return qs
+        # Category filter
+        if "category_id" in filters and filters["category_id"]:
+            queryset = queryset.filter(category_id=filters["category_id"])
+
+        # Shop filter
+        if "shop_id" in filters and filters["shop_id"]:
+            queryset = queryset.filter(shop_id=filters["shop_id"])
+
+        # Search filter
+        if "search" in filters and filters["search"]:
+            search_term = filters["search"]
+            queryset = queryset.filter(
+                Q(name__icontains=search_term) | Q(description__icontains=search_term)
+            )
+
+        # In stock filter
+        if "in_stock_only" in filters and filters["in_stock_only"]:
+            queryset = queryset.filter(stock__gt=0)
+
+        return queryset
