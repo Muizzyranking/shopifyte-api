@@ -4,7 +4,7 @@ from ninja import File, Query, UploadedFile
 from apps.users.utils import get_user_from_request
 from core.auth import AuthBearer
 from core.router import CustomRouter as Router
-from core.schema import PaginatedQueryParams, SuccessResponseSchema
+from core.schemas import PaginatedQueryParams, SuccessResponseSchema
 from core.utils import response_message, response_with_data
 
 from .schemas import (

@@ -3,7 +3,7 @@ from typing import Optional
 from ninja import ModelSchema, Schema
 from pydantic import field_validator
 
-from core.schema import PaginatedResponseSchema
+from core.schemas import PaginatedResponseSchema
 
 from .models import Image, ImageCategory
 

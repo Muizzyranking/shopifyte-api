@@ -4,7 +4,7 @@ from pydantic import EmailStr
 
 from apps.images.schemas import ImageResponseSchema
 from apps.shops.models import Shop
-from core.schema import PaginatedResponseSchema
+from core.schemas import PaginatedResponseSchema
 
 
 class ShopCreateSchema(Schema):

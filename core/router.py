@@ -7,7 +7,7 @@ from ninja import Router
 from ninja.constants import NOT_SET
 
 from core.permissions import BasePermission, check_permissions
-from core.schema import (
+from core.schemas import (
     BadRequestResponseSchema,
     ErrorResponseSchema,
     ForbiddenResponseSchema,

@@ -3,7 +3,7 @@ from typing import Literal, Optional
 from ninja import ModelSchema, Schema
 
 from apps.images.schemas import ImageResponseSchema
-from core.schema import PaginatedQueryParams, PaginatedResponseSchema
+from core.schemas import PaginatedQueryParams, PaginatedResponseSchema
 
 from .models import Product
 

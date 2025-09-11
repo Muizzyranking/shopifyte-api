@@ -6,7 +6,7 @@ from ninja import File, Query, UploadedFile
 
 from core.auth import AuthBearer
 from core.router import Router
-from core.schema import PaginatedQueryParams, SuccessResponseSchema
+from core.schemas import PaginatedQueryParams, SuccessResponseSchema
 
 from .schemas import ImageResponseSchema, ImageTransformParams, ImageUploadSchema, ImagesResponse
 from .services import ImageService

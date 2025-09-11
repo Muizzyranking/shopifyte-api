@@ -2,7 +2,7 @@ from typing import Optional
 from ninja import ModelSchema, Schema, Field
 from pydantic import EmailStr, field_validator, model_validator
 
-from core.schema import DataResponseSchema
+from core.schemas import DataResponseSchema
 
 from .models import CustomUser
 
