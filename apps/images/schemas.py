@@ -22,16 +22,30 @@ class ImageUploadSchema(Schema):
 
 
 class ImageResponseSchema(ModelSchema):
+    url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
 
     class Meta:
         model = Image
         fields = [
             "id",
             "title",
-            "view_count",
-            "url",
             "mime_type",
+            "format",
+            "alt_text",
+            "title",
+            "description",
+            "height",
+            "width",
         ]
+
+    @staticmethod
+    def resolve_url(image: Image) -> str:
+        return image.url
+
+    @staticmethod
+    def resolve_thumbnail_url(image: Image) -> str:
+        return image.thumbnail
 
 
 class ImageTransformParams(Schema):
