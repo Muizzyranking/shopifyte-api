@@ -23,7 +23,7 @@ class Product(TimestampedModel):
     category = models.ForeignKey(ProductCategory, on_delete=models.SET_NULL, null=True, blank=True)
     stock = models.PositiveIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    slug = models.SlugField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - {self.shop.name}"
@@ -31,13 +31,34 @@ class Product(TimestampedModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.name)
-            slug = f"{base_slug}-{self.id[:12]}"
+            slug = f"{base_slug}-{str(self.id)[:12]}"
             self.slug = slug
         super().save(*args, **kwargs)
 
     class Meta(TimestampedModel.Meta):
         verbose_name = "Product"
         verbose_name_plural = "Products"
+
+    @property
+    def primary_image(self):
+        if hasattr(self, "prefetched_primary_image"):
+            prefetch = self.prefetched_primary_image
+            img = prefetch[0].image
+        else:
+            primary_image = self.images.filter(primary=True).first()
+            img = primary_image.image if primary_image else None
+
+        return img if img else None
+
+    @property
+    def gallery_images(self):
+        if hasattr(self, "prefetched_gallery_images"):
+            prefetch = self.prefetched_gallery_images
+            images = [item.image for item in prefetch]
+        else:
+            images = [item.image for item in self.images.all()]
+
+        return images
 
 
 class ProductImages(TimestampedModel):
