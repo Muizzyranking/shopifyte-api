@@ -2,6 +2,7 @@ from typing import Optional
 from ninja import Field, ModelSchema, Schema
 from pydantic import EmailStr
 
+from apps.images.schemas import ImageResponseSchema
 from apps.shops.models import Shop
 from core.schema import PaginatedResponseSchema
 
@@ -29,15 +30,15 @@ class ShopFilters(Schema):
 
 
 class ShopSchema(ModelSchema):
-    logo_url: Optional[str] = None
+    logo: Optional[ImageResponseSchema] = None
 
     class Meta:
         model = Shop
         fields = ["id", "name", "slug", "description", "city", "country"]
 
     @staticmethod
-    def resolve_logo_url(obj):
-        return obj.logo_url
+    def resolve_logo(obj):
+        return obj.logo_image
 
 
 class ShopSchemaResponse(Schema):

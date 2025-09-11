@@ -70,10 +70,10 @@ class Shop(TimestampedModel):
         return f"/shops/{self.slug}"
 
     @property
-    def logo_url(self):
+    def logo_image(self):
         """Get the stored logo URL for this shop"""
         if hasattr(self, "profile") and self.profile.logo:
-            return self.profile.logo.url
+            return self.profile.logo
         return None
 
 
