@@ -139,8 +139,10 @@ class APIExceptionHandler:
         Determine if this is an output validation error by examining the stack trace.
         This looks for Django Ninja's response processing in the call stack.
         """
-        if "NinjaResponse" in str(exc):
-            return True
+        check = ["NinjaResponseSchema", "Ninja", "Response"]
+        for c in check:
+            if c in str(exc):
+                return True
 
         return False
 
