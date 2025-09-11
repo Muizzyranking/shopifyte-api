@@ -145,8 +145,6 @@ class ImageService:
             title=title,
             description=description,
         )
-        image.url = image.get_url(request)
-        image.save(update_fields=["url"])
         cls.clear_cache(image)
         return image
 
