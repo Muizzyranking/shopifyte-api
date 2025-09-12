@@ -38,6 +38,13 @@ class Product(TimestampedModel):
     class Meta(TimestampedModel.Meta):
         verbose_name = "Product"
         verbose_name_plural = "Products"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["slug"]),
+            models.Index(fields=["category"]),
+            models.Index(fields=["shop", "is_active"]),
+            models.Index(fields=["price"]),
+        ]
 
     @property
     def primary_image(self):
