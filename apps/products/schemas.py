@@ -1,9 +1,9 @@
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from ninja import ModelSchema, Schema
 
 from apps.images.schemas import ImageResponseSchema
-from core.schemas import PaginatedQueryParams, PaginatedResponseSchema
+from core.schemas import BaseSchema, PaginatedQueryParams, PaginatedResponseSchema
 
 from .models import Product
 
@@ -52,3 +52,34 @@ class ProductSchema(ModelSchema):
 
 class ProductListSchema(PaginatedResponseSchema[ProductSchema]):
     message: str = "Product retrieved successfully"
+
+
+class ShortShopInfo(Schema):
+    name: Optional[str] = None
+    slug: Optional[str] = None
+
+
+class ProductDetail(ModelSchema):
+    shop: Optional[ShortShopInfo] = None
+    product_image: Optional[ImageResponseSchema] = None
+    gallery_images: Optional[List[ImageResponseSchema]] = None
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "description", "price", "discount_price", "stock", "slug"]
+
+    @staticmethod
+    def resolve_shop(obj):
+        return obj.shop
+
+    @staticmethod
+    def resolve_product_image(obj):
+        return obj.primary_image
+
+    @staticmethod
+    def resolve_gallery_images(obj):
+        return obj.gallery_images
+
+
+class ProductDetailSchema(BaseSchema):
+    data: ProductDetail
