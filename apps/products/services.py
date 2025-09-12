@@ -1,6 +1,7 @@
 from django.db.models import Prefetch, Q
 
 from core.cache import Cache
+from core.exceptions import NotFound
 from core.pagination import Paginator
 from core.utils import get_seconds
 
@@ -51,12 +52,28 @@ class ProductService:
         if filters:
             qs = cls._apply_filters(qs, filters)
 
-        qs.order_by("-created_at")
+        qs = qs.order_by("-created_at")
 
         paginator = Paginator(request, qs, page_size)
         result = paginator.get_page(page)
         cls.cache.set(cache_key, result)
         return result
+
+    @classmethod
+    def get_product_by_slug(cls, slug):
+        cache_key = cls._generate_cache_key("slug", slug=slug)
+        cached_product = cls.cache.get(cache_key)
+
+        if cached_product:
+            return cached_product
+
+        try:
+            qs = cls._base_queryset()
+            product = qs.get(slug=slug)
+            cls.cache.set(cache_key, product)
+            return product
+        except Product.DoesNotExist:
+            raise NotFound("Product not found")
 
     @staticmethod
     def _apply_filters(queryset, filters):
