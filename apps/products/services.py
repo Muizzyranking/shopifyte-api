@@ -12,9 +12,19 @@ class ProductService:
     cache = Cache(prefix="products", timeout=get_seconds(minutes=15))
 
     @classmethod
-    def _generate_cache_key(cls, prefix: str, **kwargs):
-        cache_key_data = {k: v for k, v in kwargs.items() if v is not None}
-        return cls.cache.generate_key(cache_key_data, suffix=prefix)
+    def _clear_cache(cls, product_id=None, shop_id=None):
+        patterns = [
+            "product_list*",
+        ]
+        for pattern in patterns:
+            cls.cache.delete_pattern(pattern)
+
+        if product_id:
+            key = cls.cache.generate_key({"slug": product_id})
+            cls.cache.delete(key)
+        if shop_id:
+            key = cls.cache.generate_key({"shop_id": shop_id})
+            cls.cache.delete(key)
 
     @staticmethod
     def _base_queryset(active: bool = True):
@@ -39,10 +49,13 @@ class ProductService:
     def get_products(cls, request, filters):
         page = getattr(filters, "page", 1) if filters else 1
         page_size = getattr(filters, "page_size", 10) if filters else 10
-
-        cache_key = cls._generate_cache_key(
-            prefix="list", page=page, page_size=page_size, filters=filters or {}
-        )
+        filters = filters.dict() if filters else {}
+        cache_key_data = {
+            "page": page,
+            "page_size": page_size,
+            **filters,
+        }
+        cache_key = cls.cache.generate_key(cache_key_data, suffix="product_list")
 
         cache_result = cls.cache.get(cache_key)
         if cache_result:
@@ -61,7 +74,7 @@ class ProductService:
 
     @classmethod
     def get_product_by_slug(cls, slug):
-        cache_key = cls._generate_cache_key("slug", slug=slug)
+        cache_key = cls.cache.generate_key({"slug": slug})
         cached_product = cls.cache.get(cache_key)
 
         if cached_product:
